@@ -3,9 +3,13 @@ package server
 import (
 	"context"
 	"net/http"
+	"product_review_hub/internal/api"
 	"product_review_hub/internal/config"
 	"product_review_hub/internal/handler"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 type Server struct {
@@ -14,15 +18,19 @@ type Server struct {
 }
 
 func New(cfg *config.Config) *Server {
-	mux := http.NewServeMux()
+	r := chi.NewRouter()
+
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
 
 	h := handler.New()
-	h.RegisterRoutes(mux)
+
+	api.HandlerFromMux(h, r)
 
 	return &Server{
 		httpServer: &http.Server{
 			Addr:         cfg.ServerAddress,
-			Handler:      mux,
+			Handler:      r,
 			ReadTimeout:  15 * time.Second,
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  60 * time.Second,
