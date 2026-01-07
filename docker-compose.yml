@@ -21,6 +21,19 @@ services:
       timeout: 5s
       retries: 5
 
+  migrate:
+    image: migrate/migrate
+    container_name: product_review_hub_migrate
+    networks:
+      - product_review_network
+    volumes:
+      - ./migrations:/migrations
+    command: ["-path", "/migrations", "-database", "postgresql://postgres:postgres@postgres:5432/product_review_hub?sslmode=disable", "up"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+
   api:
     build:
       context: .
@@ -41,6 +54,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:
