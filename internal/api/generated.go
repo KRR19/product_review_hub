@@ -15,26 +15,175 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
 )
+
+// ErrorResponse defines model for ErrorResponse.
+type ErrorResponse struct {
+	// Details List of validation errors (if applicable)
+	Details *[]ValidationError `json:"details,omitempty"`
+
+	// Error Error message describing what went wrong
+	Error string `json:"error"`
+}
 
 // HealthResponse defines model for HealthResponse.
 type HealthResponse struct {
 	Status string `json:"status"`
 }
 
+// Product defines model for Product.
+type Product struct {
+	// AverageRating Average rating of the product based on all reviews
+	AverageRating *float32 `json:"average_rating"`
+
+	// Description Detailed description of the product
+	Description string `json:"description"`
+
+	// Id Unique identifier for the product
+	Id string `json:"id"`
+
+	// Name Name of the product
+	Name string `json:"name"`
+
+	// Price Price of the product in USD
+	Price float32 `json:"price"`
+}
+
+// ProductCreate defines model for ProductCreate.
+type ProductCreate struct {
+	// Description Detailed description of the product
+	Description string `json:"description"`
+
+	// Name Name of the product
+	Name string `json:"name"`
+
+	// Price Price of the product in USD (must be greater than 0)
+	Price float32 `json:"price"`
+}
+
+// ProductUpdate defines model for ProductUpdate.
+type ProductUpdate struct {
+	// Description Detailed description of the product
+	Description string `json:"description"`
+
+	// Name Name of the product
+	Name string `json:"name"`
+
+	// Price Price of the product in USD (must be greater than 0)
+	Price float32 `json:"price"`
+}
+
 // Review defines model for Review.
 type Review struct {
-	Comment   *string `json:"comment,omitempty"`
-	Id        string  `json:"id"`
-	ProductId string  `json:"product_id"`
-	Rating    int     `json:"rating"`
+	// Author Name of the review author
+	Author *string `json:"author"`
+
+	// Comment Optional text comment for the review
+	Comment *string `json:"comment"`
+
+	// Id Unique identifier for the review
+	Id string `json:"id"`
+
+	// ProductId ID of the product being reviewed
+	ProductId string `json:"product_id"`
+
+	// Rating Rating given to the product (1-5 stars)
+	Rating int `json:"rating"`
 }
+
+// ReviewCreate defines model for ReviewCreate.
+type ReviewCreate struct {
+	// Author Name of the review author
+	Author *string `json:"author,omitempty"`
+
+	// Comment Optional text comment for the review
+	Comment *string `json:"comment,omitempty"`
+
+	// Rating Rating given to the product (1-5 stars)
+	Rating int `json:"rating"`
+}
+
+// ReviewUpdate defines model for ReviewUpdate.
+type ReviewUpdate struct {
+	// Author Name of the review author
+	Author *string `json:"author,omitempty"`
+
+	// Comment Optional text comment for the review
+	Comment *string `json:"comment,omitempty"`
+
+	// Rating Rating given to the product (1-5 stars)
+	Rating int `json:"rating"`
+}
+
+// ValidationError defines model for ValidationError.
+type ValidationError struct {
+	// Field Name of the field that failed validation
+	Field string `json:"field"`
+
+	// Message Description of the validation error
+	Message string `json:"message"`
+}
+
+// GetProductsParams defines parameters for GetProducts.
+type GetProductsParams struct {
+	// Limit Maximum number of products to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of products to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// GetProductReviewsParams defines parameters for GetProductReviews.
+type GetProductReviewsParams struct {
+	// Limit Maximum number of reviews to return
+	Limit *int `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// Offset Number of reviews to skip
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+}
+
+// CreateProductJSONRequestBody defines body for CreateProduct for application/json ContentType.
+type CreateProductJSONRequestBody = ProductCreate
+
+// UpdateProductJSONRequestBody defines body for UpdateProduct for application/json ContentType.
+type UpdateProductJSONRequestBody = ProductUpdate
+
+// CreateProductReviewJSONRequestBody defines body for CreateProductReview for application/json ContentType.
+type CreateProductReviewJSONRequestBody = ReviewCreate
+
+// UpdateProductReviewJSONRequestBody defines body for UpdateProductReview for application/json ContentType.
+type UpdateProductReviewJSONRequestBody = ReviewUpdate
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Get all reviews
-	// (GET /api/v1/reviews)
-	GetReviews(w http.ResponseWriter, r *http.Request)
+	// Get list of products
+	// (GET /api/v1/products)
+	GetProducts(w http.ResponseWriter, r *http.Request, params GetProductsParams)
+	// Create a new product
+	// (POST /api/v1/products)
+	CreateProduct(w http.ResponseWriter, r *http.Request)
+	// Delete product
+	// (DELETE /api/v1/products/{productId})
+	DeleteProduct(w http.ResponseWriter, r *http.Request, productId string)
+	// Get product by ID
+	// (GET /api/v1/products/{productId})
+	GetProductById(w http.ResponseWriter, r *http.Request, productId string)
+	// Update product
+	// (PUT /api/v1/products/{productId})
+	UpdateProduct(w http.ResponseWriter, r *http.Request, productId string)
+	// Get reviews for a product
+	// (GET /api/v1/products/{productId}/reviews)
+	GetProductReviews(w http.ResponseWriter, r *http.Request, productId string, params GetProductReviewsParams)
+	// Create a review for a product
+	// (POST /api/v1/products/{productId}/reviews)
+	CreateProductReview(w http.ResponseWriter, r *http.Request, productId string)
+	// Delete a review
+	// (DELETE /api/v1/products/{productId}/reviews/{reviewId})
+	DeleteProductReview(w http.ResponseWriter, r *http.Request, productId string, reviewId string)
+	// Update a review
+	// (PUT /api/v1/products/{productId}/reviews/{reviewId})
+	UpdateProductReview(w http.ResponseWriter, r *http.Request, productId string, reviewId string)
 	// Health check endpoint
 	// (GET /health)
 	GetHealth(w http.ResponseWriter, r *http.Request)
@@ -44,9 +193,57 @@ type ServerInterface interface {
 
 type Unimplemented struct{}
 
-// Get all reviews
-// (GET /api/v1/reviews)
-func (_ Unimplemented) GetReviews(w http.ResponseWriter, r *http.Request) {
+// Get list of products
+// (GET /api/v1/products)
+func (_ Unimplemented) GetProducts(w http.ResponseWriter, r *http.Request, params GetProductsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a new product
+// (POST /api/v1/products)
+func (_ Unimplemented) CreateProduct(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete product
+// (DELETE /api/v1/products/{productId})
+func (_ Unimplemented) DeleteProduct(w http.ResponseWriter, r *http.Request, productId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get product by ID
+// (GET /api/v1/products/{productId})
+func (_ Unimplemented) GetProductById(w http.ResponseWriter, r *http.Request, productId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update product
+// (PUT /api/v1/products/{productId})
+func (_ Unimplemented) UpdateProduct(w http.ResponseWriter, r *http.Request, productId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Get reviews for a product
+// (GET /api/v1/products/{productId}/reviews)
+func (_ Unimplemented) GetProductReviews(w http.ResponseWriter, r *http.Request, productId string, params GetProductReviewsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Create a review for a product
+// (POST /api/v1/products/{productId}/reviews)
+func (_ Unimplemented) CreateProductReview(w http.ResponseWriter, r *http.Request, productId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Delete a review
+// (DELETE /api/v1/products/{productId}/reviews/{reviewId})
+func (_ Unimplemented) DeleteProductReview(w http.ResponseWriter, r *http.Request, productId string, reviewId string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Update a review
+// (PUT /api/v1/products/{productId}/reviews/{reviewId})
+func (_ Unimplemented) UpdateProductReview(w http.ResponseWriter, r *http.Request, productId string, reviewId string) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -65,11 +262,258 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(http.Handler) http.Handler
 
-// GetReviews operation middleware
-func (siw *ServerInterfaceWrapper) GetReviews(w http.ResponseWriter, r *http.Request) {
+// GetProducts operation middleware
+func (siw *ServerInterfaceWrapper) GetProducts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProductsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetReviews(w, r)
+		siw.Handler.GetProducts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProduct operation middleware
+func (siw *ServerInterfaceWrapper) CreateProduct(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProduct(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProduct operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProduct(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProductById operation middleware
+func (siw *ServerInterfaceWrapper) GetProductById(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductById(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProduct operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProduct(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProduct(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProductReviews operation middleware
+func (siw *ServerInterfaceWrapper) GetProductReviews(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProductReviewsParams
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProductReviews(w, r, productId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProductReview operation middleware
+func (siw *ServerInterfaceWrapper) CreateProductReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProductReview(w, r, productId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProductReview operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProductReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "reviewId" -------------
+	var reviewId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reviewId", chi.URLParam(r, "reviewId"), &reviewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reviewId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProductReview(w, r, productId, reviewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProductReview operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProductReview(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "productId" -------------
+	var productId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "productId", chi.URLParam(r, "productId"), &productId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "productId", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "reviewId" -------------
+	var reviewId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "reviewId", chi.URLParam(r, "reviewId"), &reviewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "reviewId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProductReview(w, r, productId, reviewId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -207,7 +651,31 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/api/v1/reviews", wrapper.GetReviews)
+		r.Get(options.BaseURL+"/api/v1/products", wrapper.GetProducts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/products", wrapper.CreateProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/products/{productId}", wrapper.DeleteProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/products/{productId}", wrapper.GetProductById)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/products/{productId}", wrapper.UpdateProduct)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/products/{productId}/reviews", wrapper.GetProductReviews)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/products/{productId}/reviews", wrapper.CreateProductReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/products/{productId}/reviews/{reviewId}", wrapper.DeleteProductReview)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/products/{productId}/reviews/{reviewId}", wrapper.UpdateProductReview)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/health", wrapper.GetHealth)
@@ -219,15 +687,40 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/6RTS2/bPBD8K/z261GN5KQpAt5yagLkELjHICgYam1tIj5KrtwYhv57QVJW6wdy6W1B",
-	"zj5mdnYH2hnvLFqOIHcQdYdG5fAOVc/dEqN3NmJ68cF5DExYoKx4yBG+K+N7BAnuDSrgrU9x5EB2DeNY",
-	"QcCfAwVsQT7t055nnHt5Rc0wVrDEDeGv007aGYOWD1t9C6hY+ODaQfN/p20roPYwY3F5dQ42lfhxDE/v",
-	"n79cfz2XExSn6G/8dQVGvZMZTInJlngxp5NlXGM4UYRaOJhiLn+qUUolu3Kpc4tRB/JMzoKE28d7sXJB",
-	"GGXVmux6r4wIWdSYWBBnYo/TT5Fb3A0v4vbxHirYYIil2uKiuWgSUefRKk8g4So/VeAVd3krtfJUbxb1",
-	"voHcwRrzktLuVJrrvk2LQl7OM4TJThl+2TRlvZan9Srve9I5t36NaZS9JVNEjCYnfgq4Agn/13/MW0/O",
-	"rScTjbN2KgS1LdIdSvZAkYVbzQolRByMUWFbxhaq7w9+6y7fxEdUy9X8K9OPCB7d5Rli3zFsSKOgKMrA",
-	"2yNupYTQHeo3gbb1juzkrogh2QDk07HDHpxWvWhxg73z6R5FwUIFQ+hBQsfsZV33Cde5yPKmuWlgfB5/",
-	"BwAA//9/cORnZQQAAA==",
+	"H4sIAAAAAAAC/+xbW2/bOBb+K2e5+9ACSmx3ksVEbzPNzjaLzqyRQXcfimJAS0cWpxSpkpRTo/B/H5DU",
+	"1ZJvqZ24QJ+q6MJzeM53bh/rLySSWS4FCqNJ+IXoKMWMust/KSXVPepcCo32Rq5kjsowdI9jNJTx8lJH",
+	"iuWGSUFC8pZpAzKBBeUspvYmoF1KwwuWAM1zziI64/iSBIQZzNwS/1CYkJD8fdSoMyp1Gf2vXsipRFYB",
+	"McscSUioUnRp/3YC+qq49yFDrekcwT+bMTGHh5QaeEBh4EFJMScBwc80y7lddKpkXEQGhDSQyELEpJan",
+	"jWJiTlargCj8VDCFMQnfl9I/1K/J2Z8YGavXG6TcpJuNqA01hbtq5MuPOwWWnw1JLLXvi6ILVHSOfyhq",
+	"7JI9W/3kn4N/bh1oUoS8NMaMaoxBCqCcg8IFwwfdttrV5XVAEqkyakhIEi6pIQHJ6GeWFRkJrwOSMeGv",
+	"xwERBecWAiQ0qsB6F6LIZuj821FtXdNbhzyMoXV7Td+OQ9+weXrxqaCcmSU8MIUctYYUaZynUqCGB2ZS",
+	"EJJphIiKCDl3aOu7ISAs7uvzTrBPBQKLURiWMFSQSLVRG3vvYvLqh6HVBc2wv/5vNMNt+/t/taU39ZaG",
+	"Fs8ViwZWn9rb6+5mAt79ftuWcnNzeXNj/454odkCf63c6T3Yd33L3WvuXQMzswHmdt71e6XxFpS/VkjN",
+	"YG46D/hkTLxFMTcpCScndvcOUYc7H15khTYwQ5g7K1tEUwHjl0+DiscB4l0enx4QU4UZK7LNWKCRYQt8",
+	"XkjAVMlng8Xk1bng4t6VqoFqWJh0qGNoW9qXOShfbdv7PzIVcCutIhtKWWPiSGYZCtMX9V93QTkY/Gyg",
+	"fK0uHV54R+q/rcErd/wNbF7iS1DoP40xvtxHn8Mq2IAaChcXV9f/HC4xTrc/hmTc3fZ6CrSNhpeA8d5F",
+	"clMDc+8blzlboAAjO6JeTC6uQRuqdAen1xtalCZUmDA431S0Wtut1doMwk3F6mhQfG7onaendvplU834",
+	"JvwiZVyZLoBZYT8qeGzT8wyNQXVqv1ydwi/rA1/PNQlDHm/3jHvF1iYDia/uzTzaTWdejwEzlXPjUMPQ",
+	"6xPWh90BEVAVzhmaB0QBE6Aihuud057fbaNP32T2CyYSOTDVTe8cfjIq6NwqUfmzmeEMM52510cFvClm",
+	"8NP0jgRkgUr71SaX48uxNY3MUdCckZD84G4FJKcmdb4Z0ZyNFpNRKcjdm+MA2O/RFEpooJBb1ajBGHjJ",
+	"Hdgps1rA91QmRaaAdoZUq72FhbP7XWzjAc20kmt1UjRDg0qT8P26+F89bMH3GVZoLdBIUE45Ys1KQvKp",
+	"QLWsppSQcJYx27V4gsLvLKEFNyScjFsBMRmPd4VED8KD2uiPLN+gi0wSjRuUGQ82Vo30DxZnnppwbno1",
+	"Htt/IilMmZ5KtsYqN/pT++a5EbQXe1MREj3WZrU+59fMUQ2dVUCuDtRpmypdRmtAgTvh4hicjaEFn1VA",
+	"rp9WEYPKFgKNaoGqzCn2PV1kGVVLj/U6XtoWy6UeiDbffdhoE/jQ7ult9tJLbTDrRZP/ZloPHDYpoTY/",
+	"y3h5NFN0J/lVN/fZFnbVA+nk2MKHPFBlw8gpFoMuogi1TgrOl/vjsqwBTnHmwTWtRq4F5QV2mNT3dWUr",
+	"J5pWDfJ3YHj4IjaUSw60VT1bsMmY1kzMf6kK51bh5YzVyLY3gGmoPbND3io4dkQykRcGYmroWcaih283",
+	"uNwr69Vw9KW8uotX3vwczWCLYe+74lgCMVEyawUrvEipisF///ISqmp6Nb4BVicESKmuSv1lL769kCa+",
+	"t9bL/vxmZCm+Kk22B2gqU71Rsh7SbXSstz79mnQ1xE94Dbz4oeC82j843WWJ5T73fzwoD659Nb55nKav",
+	"qbALeQvULnGtEn5m2jSjtT7iHl5LkXAWGbgYQthZhuZtx0JWxR3dqM2TfM2kzOi13tNPW/ahLIwLi6oW",
+	"N531pt7056ULisPDTaFRDBcnDrjxU9bXqv58U1F7lr1gTast4e7WNYLFAM4926GBiiZPdKBuK5its/DC",
+	"plNQmHMaYYbCvOxB2i/2NQWk8OTLsfF8sj61JIv26lOfNI68IR/bp560W/se14+Oaw+3vTvKUVV7HsO5",
+	"lN86uoiCzjFiCYta502bytl9XfAOi/9jRn2wm96p9ncW7E5LmW+Z3CmP1w7gdlqt4tlQO98T1Fc1Ht3E",
+	"0Wq092GiyhOUPZNOh5G6r85Dni/tnKjZ6BwYPjEnVoV0Hw/lwcDRGbH7+jhqKytVH9Q0vNSOg5XjsmKb",
+	"5Z8RM/Y9lX09h9dJSYe2XqMv/mJvfq+Sto3e287cnUEeDDZLK/e3gyysjHZ8rrDMWkehCnV5FG0t9Js0",
+	"vzgst/PGlmhyOduqsvXDUtv2d8ePQ6kqr5x3RJbUXRUjB3EaQ0F8MKXxrUTWNhbl8ZF1qr7meTiUnX3N",
+	"1zEoZ9TXnFWP8T1lPgdh1KRM27ak7lcoLVKox+T436mQE4bf2i9hBrb3O6oFi9w5s1d4ubY3vwREKUYf",
+	"AUWcSyZKTtRbZCg5v5UR5RDjArnM3X+n8++SgBSKk5CkxuThaMTte6nUJvxx/OOYrD6s/goAAP//rHXG",
+	"QRs1AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

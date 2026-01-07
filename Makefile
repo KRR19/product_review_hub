@@ -2,6 +2,8 @@
 
 generate:
 	cd api && oapi-codegen -config oapi-codegen.yaml openapi.yaml
+	
+	go mod tidy
 
 build:
 	go build -o bin/api ./cmd/api

@@ -21,10 +21,239 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
 
-  /api/v1/reviews:
+  /api/v1/products:
+    post:
+      summary: Create a new product
+      description: Creates a new product in the system
+      operationId: createProduct
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreate'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidPrice:
+                  value:
+                    error: "Validation error"
+                    details:
+                      - field: "price"
+                        message: "price must be greater than 0"
+                missingField:
+                  value:
+                    error: "Validation error"
+                    details:
+                      - field: "name"
+                        message: "name is required"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
     get:
-      summary: Get all reviews
-      operationId: getReviews
+      summary: Get list of products
+      description: Returns a paginated list of all products with their average ratings
+      operationId: getProducts
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of products to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          description: Number of products to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/products/{productId}:
+    get:
+      summary: Get product by ID
+      description: Returns a single product with its average rating, but without the list of reviews
+      operationId: getProductById
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to retrieve
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Product not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    put:
+      summary: Update product
+      description: Updates an existing product with new data (full replacement)
+      operationId: updateProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdate'
+      responses:
+        '200':
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Product not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete product
+      description: Deletes a product from the system (hard delete). Returns 409 if product has reviews.
+      operationId: deleteProduct
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Product deleted successfully
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Product not found"
+        '409':
+          description: Conflict - product has reviews
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Cannot delete product with existing reviews"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/products/{productId}/reviews:
+    get:
+      summary: Get reviews for a product
+      description: Returns a paginated list of reviews for a specific product
+      operationId: getProductReviews
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of reviews to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+        - name: offset
+          in: query
+          description: Number of reviews to skip
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
       responses:
         '200':
           description: List of reviews
@@ -34,6 +263,188 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Review'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Product not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    post:
+      summary: Create a review for a product
+      description: Creates a new review for a specific product
+      operationId: createProductReview
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewCreate'
+      responses:
+        '201':
+          description: Review created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRating:
+                  value:
+                    error: "Validation error"
+                    details:
+                      - field: "rating"
+                        message: "rating must be between 1 and 5"
+                missingField:
+                  value:
+                    error: "Validation error"
+                    details:
+                      - field: "rating"
+                        message: "rating is required"
+        '404':
+          description: Product not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Product not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/products/{productId}/reviews/{reviewId}:
+    put:
+      summary: Update a review
+      description: Updates an existing review for a product (full replacement)
+      operationId: updateProductReview
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+        - name: reviewId
+          in: path
+          description: ID of the review to update
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewUpdate'
+      responses:
+        '200':
+          description: Review updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Review'
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidRating:
+                  value:
+                    error: "Validation error"
+                    details:
+                      - field: "rating"
+                        message: "rating must be between 1 and 5"
+        '404':
+          description: Product or review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                productNotFound:
+                  value:
+                    error: "Product not found"
+                reviewNotFound:
+                  value:
+                    error: "Review not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    
+    delete:
+      summary: Delete a review
+      description: Deletes a review from the system (hard delete)
+      operationId: deleteProductReview
+      parameters:
+        - name: productId
+          in: path
+          description: ID of the product
+          required: true
+          schema:
+            type: string
+        - name: reviewId
+          in: path
+          description: ID of the review to delete
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Review deleted successfully
+        '404':
+          description: Product or review not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                productNotFound:
+                  value:
+                    error: "Product not found"
+                reviewNotFound:
+                  value:
+                    error: "Review not found"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
 components:
   schemas:
@@ -46,6 +457,92 @@ components:
           type: string
           example: "ok"
     
+    Product:
+      type: object
+      required:
+        - id
+        - name
+        - description
+        - price
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the product
+          example: "prod-123"
+        name:
+          type: string
+          description: Name of the product
+          example: "Wireless Headphones"
+        description:
+          type: string
+          description: Detailed description of the product
+          example: "High-quality wireless headphones with noise cancellation"
+        price:
+          type: number
+          format: float
+          description: Price of the product in USD
+          minimum: 0
+          exclusiveMinimum: true
+          example: 99.99
+        average_rating:
+          type: number
+          format: float
+          description: Average rating of the product based on all reviews
+          minimum: 0
+          maximum: 5
+          example: 4.5
+          nullable: true
+    
+    ProductCreate:
+      type: object
+      required:
+        - name
+        - description
+        - price
+      properties:
+        name:
+          type: string
+          description: Name of the product
+          minLength: 1
+          example: "Wireless Headphones"
+        description:
+          type: string
+          description: Detailed description of the product
+          minLength: 1
+          example: "High-quality wireless headphones with noise cancellation"
+        price:
+          type: number
+          format: float
+          description: Price of the product in USD (must be greater than 0)
+          minimum: 0
+          exclusiveMinimum: true
+          example: 99.99
+    
+    ProductUpdate:
+      type: object
+      required:
+        - name
+        - description
+        - price
+      properties:
+        name:
+          type: string
+          description: Name of the product
+          minLength: 1
+          example: "Wireless Headphones Pro"
+        description:
+          type: string
+          description: Detailed description of the product
+          minLength: 1
+          example: "Premium wireless headphones with active noise cancellation"
+        price:
+          type: number
+          format: float
+          description: Price of the product in USD (must be greater than 0)
+          minimum: 0
+          exclusiveMinimum: true
+          example: 129.99
+    
     Review:
       type: object
       required:
@@ -55,15 +552,95 @@ components:
       properties:
         id:
           type: string
-          example: "123"
+          description: Unique identifier for the review
+          example: "rev-456"
         product_id:
           type: string
-          example: "prod-456"
+          description: ID of the product being reviewed
+          example: "prod-123"
         rating:
           type: integer
+          description: Rating given to the product (1-5 stars)
           minimum: 1
           maximum: 5
           example: 5
         comment:
           type: string
-          example: "Great product!"
+          description: Optional text comment for the review
+          example: "Great product! Highly recommended."
+          nullable: true
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Doe"
+          nullable: true
+    
+    ReviewCreate:
+      type: object
+      required:
+        - rating
+      properties:
+        rating:
+          type: integer
+          description: Rating given to the product (1-5 stars)
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          description: Optional text comment for the review
+          example: "Great product! Highly recommended."
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Doe"
+    
+    ReviewUpdate:
+      type: object
+      required:
+        - rating
+      properties:
+        rating:
+          type: integer
+          description: Rating given to the product (1-5 stars)
+          minimum: 1
+          maximum: 5
+          example: 4
+        comment:
+          type: string
+          description: Optional text comment for the review
+          example: "Good product, but could be better."
+        author:
+          type: string
+          description: Name of the review author
+          example: "John Doe"
+    
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "Product not found"
+        details:
+          type: array
+          description: List of validation errors (if applicable)
+          items:
+            $ref: '#/components/schemas/ValidationError'
+    
+    ValidationError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: Name of the field that failed validation
+          example: "rating"
+        message:
+          type: string
+          description: Description of the validation error
+          example: "rating must be between 1 and 5"
