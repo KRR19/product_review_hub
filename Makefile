@@ -1,4 +1,4 @@
-.PHONY: generate build run clean deps run-fresh docker-build docker-up docker-down docker-logs
+.PHONY: generate build run clean deps run-fresh docker-build docker-up docker-down docker-logs lint lint-fix
 
 generate:
 	cd api && oapi-codegen -config oapi-codegen.yaml openapi.yaml
@@ -29,5 +29,12 @@ clean:
 deps:
 	go mod download
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+lint:
+	golangci-lint run ./...
+
+lint-fix:
+	golangci-lint run --fix ./...
 
 run-fresh: generate build run
