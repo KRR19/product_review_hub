@@ -1,0 +1,128 @@
+package e2e
+
+import (
+	"bytes"
+	"encoding/json"
+	"io"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+// RequestOption is a function that modifies an HTTP request.
+type RequestOption func(*http.Request)
+
+// WithHeader adds a header to the request.
+func WithHeader(key, value string) RequestOption {
+	return func(r *http.Request) {
+		r.Header.Set(key, value)
+	}
+}
+
+// WithContentType sets the Content-Type header.
+func WithContentType(contentType string) RequestOption {
+	return func(r *http.Request) {
+		r.Header.Set("Content-Type", contentType)
+	}
+}
+
+// HTTPClient provides helper methods for making HTTP requests in tests.
+type HTTPClient struct {
+	t       *testing.T
+	client  *http.Client
+	baseURL string
+}
+
+// NewHTTPClient creates a new test HTTP client.
+func NewHTTPClient(t *testing.T, env *TestEnv) *HTTPClient {
+	return &HTTPClient{
+		t:       t,
+		client:  env.Client,
+		baseURL: env.BaseURL,
+	}
+}
+
+// Post sends a POST request with JSON body.
+func (c *HTTPClient) Post(path string, body interface{}, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	jsonBody, err := json.Marshal(body)
+	require.NoError(c.t, err, "Failed to marshal request body")
+
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, bytes.NewBuffer(jsonBody))
+	require.NoError(c.t, err, "Failed to create request")
+
+	req.Header.Set("Content-Type", "application/json")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
+// PostRaw sends a POST request with raw body.
+func (c *HTTPClient) PostRaw(path string, body []byte, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	req, err := http.NewRequest(http.MethodPost, c.baseURL+path, bytes.NewBuffer(body))
+	require.NoError(c.t, err, "Failed to create request")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
+// Get sends a GET request.
+func (c *HTTPClient) Get(path string, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	req, err := http.NewRequest(http.MethodGet, c.baseURL+path, nil)
+	require.NoError(c.t, err, "Failed to create request")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
+// ParseJSON parses the response body as JSON into the provided struct.
+func ParseJSON[T any](t *testing.T, resp *http.Response) T {
+	t.Helper()
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "Failed to read response body")
+
+	var result T
+	err = json.Unmarshal(body, &result)
+	require.NoError(t, err, "Failed to parse JSON response: %s", string(body))
+
+	return result
+}
+
+// ReadBody reads and returns the response body as string.
+func ReadBody(t *testing.T, resp *http.Response) string {
+	t.Helper()
+
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	require.NoError(t, err, "Failed to read response body")
+
+	return string(body)
+}
