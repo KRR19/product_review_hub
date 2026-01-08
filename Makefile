@@ -38,7 +38,6 @@ lint:
 lint-fix:
 	golangci-lint run --fix ./...
 
-# Миграции (локально)
 migrate-create:
 	@read -p "Enter migration name: " name; \
 	migrate create -ext sql -dir migrations -seq $$name
@@ -53,3 +52,15 @@ migrate-status:
 	migrate -path migrations -database "postgresql://postgres:postgres@localhost:5432/product_review_hub?sslmode=disable" version
 
 run-fresh: generate build run
+
+# Testing
+test:
+	go test -v ./...
+
+test-integration:
+	go test -v -tags=integration ./...
+
+test-coverage:
+	go test -v -coverprofile=coverage.out ./...
+	go tool cover -html=coverage.out -o coverage.html
+
