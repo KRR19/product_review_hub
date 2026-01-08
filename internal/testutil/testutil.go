@@ -23,10 +23,10 @@ func NewTestDB(t *testing.T) *TestDB {
 
 	cfg := database.Config{
 		Host:     getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		Port:     getEnvOrDefault("TEST_DB_PORT", "5432"),
+		Port:     getEnvOrDefault("TEST_DB_PORT", "5433"),
 		User:     getEnvOrDefault("TEST_DB_USER", "postgres"),
 		Password: getEnvOrDefault("TEST_DB_PASSWORD", "postgres"),
-		DBName:   getEnvOrDefault("TEST_DB_NAME", "product_review_hub"),
+		DBName:   getEnvOrDefault("TEST_DB_NAME", "product_review_hub_test"),
 		SSLMode:  getEnvOrDefault("TEST_DB_SSLMODE", "disable"),
 	}
 
@@ -165,7 +165,7 @@ func TestDSN() string {
 	return fmt.Sprintf(
 		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 		getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		getEnvOrDefault("TEST_DB_PORT", "5432"),
+		getEnvOrDefault("TEST_DB_PORT", "5433"),
 		getEnvOrDefault("TEST_DB_USER", "postgres"),
 		getEnvOrDefault("TEST_DB_PASSWORD", "postgres"),
 		getEnvOrDefault("TEST_DB_NAME", "product_review_hub_test"),
