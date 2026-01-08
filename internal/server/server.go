@@ -8,6 +8,7 @@ import (
 	"product_review_hub/internal/config"
 	"product_review_hub/internal/database"
 	"product_review_hub/internal/handler"
+	"product_review_hub/internal/repository/products"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -31,7 +32,10 @@ func New(cfg *config.Config) *Server {
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	h := handler.New(db)
+	// Initialize repositories
+	productRepo := products.NewRepository(db)
+
+	h := handler.New(db, productRepo)
 
 	api.HandlerFromMux(h, r)
 
