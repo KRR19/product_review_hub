@@ -6,6 +6,9 @@ import (
 	"product_review_hub/internal/repository/reviews"
 	"product_review_hub/internal/testutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRepository_Create(t *testing.T) {
@@ -25,25 +28,14 @@ func TestRepository_Create(t *testing.T) {
 			Rating:    5,
 			Comment:   &comment,
 		})
-		if err != nil {
-			t.Fatalf("Create() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if review.ID == 0 {
-			t.Error("Create() review ID should not be 0")
-		}
-		if review.ProductID != productID {
-			t.Errorf("Create() ProductID = %v, want %v", review.ProductID, productID)
-		}
-		if review.Author != "John Doe" {
-			t.Errorf("Create() Author = %v, want %v", review.Author, "John Doe")
-		}
-		if review.Rating != 5 {
-			t.Errorf("Create() Rating = %v, want %v", review.Rating, 5)
-		}
-		if review.Comment == nil || *review.Comment != comment {
-			t.Errorf("Create() Comment = %v, want %v", review.Comment, comment)
-		}
+		assert.NotZero(t, review.ID)
+		assert.Equal(t, productID, review.ProductID)
+		assert.Equal(t, "John Doe", review.Author)
+		assert.Equal(t, 5, review.Rating)
+		require.NotNil(t, review.Comment)
+		assert.Equal(t, comment, *review.Comment)
 	})
 
 	t.Run("create review without comment", func(t *testing.T) {
@@ -57,13 +49,8 @@ func TestRepository_Create(t *testing.T) {
 			Rating:    4,
 			Comment:   nil,
 		})
-		if err != nil {
-			t.Fatalf("Create() error = %v", err)
-		}
-
-		if review.Comment != nil {
-			t.Errorf("Create() Comment = %v, want nil", review.Comment)
-		}
+		require.NoError(t, err)
+		assert.Nil(t, review.Comment)
 	})
 
 	t.Run("create review with various ratings", func(t *testing.T) {
@@ -77,12 +64,8 @@ func TestRepository_Create(t *testing.T) {
 				Author:    "User",
 				Rating:    rating,
 			})
-			if err != nil {
-				t.Fatalf("Create() error = %v for rating %d", err, rating)
-			}
-			if review.Rating != rating {
-				t.Errorf("Create() Rating = %v, want %v", review.Rating, rating)
-			}
+			require.NoError(t, err, "rating %d", rating)
+			assert.Equal(t, rating, review.Rating)
 		}
 	})
 }
@@ -100,31 +83,19 @@ func TestRepository_GetByID(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, &comment)
 
 		review, err := repo.GetByID(ctx, reviewID)
-		if err != nil {
-			t.Fatalf("GetByID() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if review.ID != reviewID {
-			t.Errorf("GetByID() ID = %v, want %v", review.ID, reviewID)
-		}
-		if review.ProductID != productID {
-			t.Errorf("GetByID() ProductID = %v, want %v", review.ProductID, productID)
-		}
-		if review.Author != "Author" {
-			t.Errorf("GetByID() Author = %v, want %v", review.Author, "Author")
-		}
+		assert.Equal(t, reviewID, review.ID)
+		assert.Equal(t, productID, review.ProductID)
+		assert.Equal(t, "Author", review.Author)
 	})
 
 	t.Run("get non-existing review", func(t *testing.T) {
 		tdb.Cleanup(t)
 
 		_, err := repo.GetByID(ctx, 999999)
-		if err == nil {
-			t.Error("GetByID() expected error for non-existing review")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("GetByID() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 }
 
@@ -140,13 +111,8 @@ func TestRepository_GetByIDAndProductID(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
 
 		review, err := repo.GetByIDAndProductID(ctx, reviewID, productID)
-		if err != nil {
-			t.Fatalf("GetByIDAndProductID() error = %v", err)
-		}
-
-		if review.ID != reviewID {
-			t.Errorf("GetByIDAndProductID() ID = %v, want %v", review.ID, reviewID)
-		}
+		require.NoError(t, err)
+		assert.Equal(t, reviewID, review.ID)
 	})
 
 	t.Run("get review with non-matching product", func(t *testing.T) {
@@ -157,12 +123,8 @@ func TestRepository_GetByIDAndProductID(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID1, "Author", 5, nil)
 
 		_, err := repo.GetByIDAndProductID(ctx, reviewID, productID2)
-		if err == nil {
-			t.Error("GetByIDAndProductID() expected error for non-matching product")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("GetByIDAndProductID() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 }
 
@@ -181,13 +143,8 @@ func TestRepository_ListByProductID(t *testing.T) {
 			Limit:     10,
 			Offset:    0,
 		})
-		if err != nil {
-			t.Fatalf("ListByProductID() error = %v", err)
-		}
-
-		if len(reviewsList) != 0 {
-			t.Errorf("ListByProductID() len = %v, want 0", len(reviewsList))
-		}
+		require.NoError(t, err)
+		assert.Empty(t, reviewsList)
 	})
 
 	t.Run("list reviews with pagination", func(t *testing.T) {
@@ -206,12 +163,8 @@ func TestRepository_ListByProductID(t *testing.T) {
 			Limit:     2,
 			Offset:    0,
 		})
-		if err != nil {
-			t.Fatalf("ListByProductID() error = %v", err)
-		}
-		if len(reviewsList) != 2 {
-			t.Errorf("ListByProductID() len = %v, want 2", len(reviewsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, reviewsList, 2)
 
 		// Get second page
 		reviewsList, err = repo.ListByProductID(ctx, models.ListReviewsParams{
@@ -219,12 +172,8 @@ func TestRepository_ListByProductID(t *testing.T) {
 			Limit:     2,
 			Offset:    2,
 		})
-		if err != nil {
-			t.Fatalf("ListByProductID() error = %v", err)
-		}
-		if len(reviewsList) != 2 {
-			t.Errorf("ListByProductID() len = %v, want 2", len(reviewsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, reviewsList, 2)
 	})
 
 	t.Run("list reviews only for specific product", func(t *testing.T) {
@@ -242,17 +191,11 @@ func TestRepository_ListByProductID(t *testing.T) {
 			Limit:     10,
 			Offset:    0,
 		})
-		if err != nil {
-			t.Fatalf("ListByProductID() error = %v", err)
-		}
-		if len(reviewsList) != 2 {
-			t.Errorf("ListByProductID() len = %v, want 2", len(reviewsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, reviewsList, 2)
 
 		for _, r := range reviewsList {
-			if r.ProductID != productID1 {
-				t.Errorf("ListByProductID() review ProductID = %v, want %v", r.ProductID, productID1)
-			}
+			assert.Equal(t, productID1, r.ProductID)
 		}
 	})
 }
@@ -274,19 +217,12 @@ func TestRepository_Update(t *testing.T) {
 			Rating:  5,
 			Comment: &newComment,
 		})
-		if err != nil {
-			t.Fatalf("Update() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if updated.Author != "Updated Author" {
-			t.Errorf("Update() Author = %v, want %v", updated.Author, "Updated Author")
-		}
-		if updated.Rating != 5 {
-			t.Errorf("Update() Rating = %v, want %v", updated.Rating, 5)
-		}
-		if updated.Comment == nil || *updated.Comment != newComment {
-			t.Errorf("Update() Comment = %v, want %v", updated.Comment, newComment)
-		}
+		assert.Equal(t, "Updated Author", updated.Author)
+		assert.Equal(t, 5, updated.Rating)
+		require.NotNil(t, updated.Comment)
+		assert.Equal(t, newComment, *updated.Comment)
 	})
 
 	t.Run("update non-existing review", func(t *testing.T) {
@@ -296,12 +232,8 @@ func TestRepository_Update(t *testing.T) {
 			Author: "Author",
 			Rating: 5,
 		})
-		if err == nil {
-			t.Error("Update() expected error for non-existing review")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("Update() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 }
 
@@ -320,13 +252,8 @@ func TestRepository_UpdateByIDAndProductID(t *testing.T) {
 			Author: "New Author",
 			Rating: 5,
 		})
-		if err != nil {
-			t.Fatalf("UpdateByIDAndProductID() error = %v", err)
-		}
-
-		if updated.Author != "New Author" {
-			t.Errorf("UpdateByIDAndProductID() Author = %v, want %v", updated.Author, "New Author")
-		}
+		require.NoError(t, err)
+		assert.Equal(t, "New Author", updated.Author)
 	})
 
 	t.Run("update with non-matching product", func(t *testing.T) {
@@ -340,12 +267,8 @@ func TestRepository_UpdateByIDAndProductID(t *testing.T) {
 			Author: "Author",
 			Rating: 5,
 		})
-		if err == nil {
-			t.Error("UpdateByIDAndProductID() expected error for non-matching product")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("UpdateByIDAndProductID() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 }
 
@@ -361,27 +284,19 @@ func TestRepository_Delete(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
 
 		err := repo.Delete(ctx, reviewID)
-		if err != nil {
-			t.Fatalf("Delete() error = %v", err)
-		}
+		require.NoError(t, err)
 
 		// Verify review is deleted
 		_, err = repo.GetByID(ctx, reviewID)
-		if err != reviews.ErrNotFound {
-			t.Errorf("GetByID() after delete error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 
 	t.Run("delete non-existing review", func(t *testing.T) {
 		tdb.Cleanup(t)
 
 		err := repo.Delete(ctx, 999999)
-		if err == nil {
-			t.Error("Delete() expected error for non-existing review")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("Delete() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 }
 
@@ -397,15 +312,11 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
 
 		err := repo.DeleteByIDAndProductID(ctx, reviewID, productID)
-		if err != nil {
-			t.Fatalf("DeleteByIDAndProductID() error = %v", err)
-		}
+		require.NoError(t, err)
 
 		// Verify review is deleted
 		_, err = repo.GetByID(ctx, reviewID)
-		if err != reviews.ErrNotFound {
-			t.Errorf("GetByID() after delete error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 	})
 
 	t.Run("delete with non-matching product", func(t *testing.T) {
@@ -416,18 +327,12 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 		reviewID := tdb.CreateTestReview(t, productID1, "Author", 5, nil)
 
 		err := repo.DeleteByIDAndProductID(ctx, reviewID, productID2)
-		if err == nil {
-			t.Error("DeleteByIDAndProductID() expected error for non-matching product")
-		}
-		if err != reviews.ErrNotFound {
-			t.Errorf("DeleteByIDAndProductID() error = %v, want %v", err, reviews.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, reviews.ErrNotFound)
 
 		// Verify review still exists
 		_, err = repo.GetByID(ctx, reviewID)
-		if err != nil {
-			t.Errorf("GetByID() should find review: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 }
 
@@ -445,18 +350,9 @@ func TestRepository_GetAverageRatingByProductID(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User3", 4, nil)
 
 		avgRating, err := repo.GetAverageRatingByProductID(ctx, productID)
-		if err != nil {
-			t.Fatalf("GetAverageRatingByProductID() error = %v", err)
-		}
-
-		if avgRating == nil {
-			t.Fatal("GetAverageRatingByProductID() avgRating should not be nil")
-		}
-
-		expected := 4.0
-		if *avgRating != expected {
-			t.Errorf("GetAverageRatingByProductID() = %v, want %v", *avgRating, expected)
-		}
+		require.NoError(t, err)
+		require.NotNil(t, avgRating)
+		assert.Equal(t, 4.0, *avgRating)
 	})
 
 	t.Run("average rating without reviews", func(t *testing.T) {
@@ -465,12 +361,7 @@ func TestRepository_GetAverageRatingByProductID(t *testing.T) {
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
 
 		avgRating, err := repo.GetAverageRatingByProductID(ctx, productID)
-		if err != nil {
-			t.Fatalf("GetAverageRatingByProductID() error = %v", err)
-		}
-
-		if avgRating != nil {
-			t.Errorf("GetAverageRatingByProductID() = %v, want nil for product without reviews", *avgRating)
-		}
+		require.NoError(t, err)
+		assert.Nil(t, avgRating)
 	})
 }

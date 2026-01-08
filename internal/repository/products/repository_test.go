@@ -6,6 +6,9 @@ import (
 	"product_review_hub/internal/repository/products"
 	"product_review_hub/internal/testutil"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRepository_Create(t *testing.T) {
@@ -52,31 +55,21 @@ func TestRepository_Create(t *testing.T) {
 			tdb.Cleanup(t)
 
 			product, err := repo.Create(ctx, tt.params)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Create() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				assert.Error(t, err)
 				return
 			}
 
-			if !tt.wantErr {
-				if product.ID == 0 {
-					t.Error("Create() product ID should not be 0")
-				}
-				if product.Name != tt.params.Name {
-					t.Errorf("Create() name = %v, want %v", product.Name, tt.params.Name)
-				}
-				if tt.params.Description != nil && (product.Description == nil || *product.Description != *tt.params.Description) {
-					t.Errorf("Create() description = %v, want %v", product.Description, tt.params.Description)
-				}
-				if product.Price != tt.params.Price {
-					t.Errorf("Create() price = %v, want %v", product.Price, tt.params.Price)
-				}
-				if product.CreatedAt.IsZero() {
-					t.Error("Create() created_at should not be zero")
-				}
-				if product.UpdatedAt.IsZero() {
-					t.Error("Create() updated_at should not be zero")
-				}
+			require.NoError(t, err)
+			assert.NotZero(t, product.ID)
+			assert.Equal(t, tt.params.Name, product.Name)
+			if tt.params.Description != nil {
+				require.NotNil(t, product.Description)
+				assert.Equal(t, *tt.params.Description, *product.Description)
 			}
+			assert.Equal(t, tt.params.Price, product.Price)
+			assert.False(t, product.CreatedAt.IsZero())
+			assert.False(t, product.UpdatedAt.IsZero())
 		})
 	}
 }
@@ -93,19 +86,11 @@ func TestRepository_GetByID(t *testing.T) {
 		productID := tdb.CreateTestProduct(t, "Test Product", &desc, 99.99)
 
 		product, err := repo.GetByID(ctx, productID)
-		if err != nil {
-			t.Fatalf("GetByID() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if product.ID != productID {
-			t.Errorf("GetByID() ID = %v, want %v", product.ID, productID)
-		}
-		if product.Name != "Test Product" {
-			t.Errorf("GetByID() Name = %v, want %v", product.Name, "Test Product")
-		}
-		if product.AverageRating != nil {
-			t.Errorf("GetByID() AverageRating should be nil for product without reviews")
-		}
+		assert.Equal(t, productID, product.ID)
+		assert.Equal(t, "Test Product", product.Name)
+		assert.Nil(t, product.AverageRating)
 	})
 
 	t.Run("get product with reviews", func(t *testing.T) {
@@ -117,27 +102,18 @@ func TestRepository_GetByID(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User2", 3, nil)
 
 		product, err := repo.GetByID(ctx, productID)
-		if err != nil {
-			t.Fatalf("GetByID() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if product.AverageRating == nil {
-			t.Error("GetByID() AverageRating should not be nil")
-		} else if *product.AverageRating != 4.0 {
-			t.Errorf("GetByID() AverageRating = %v, want %v", *product.AverageRating, 4.0)
-		}
+		require.NotNil(t, product.AverageRating)
+		assert.Equal(t, 4.0, *product.AverageRating)
 	})
 
 	t.Run("get non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
 		_, err := repo.GetByID(ctx, 999999)
-		if err == nil {
-			t.Error("GetByID() expected error for non-existing product")
-		}
-		if err != products.ErrNotFound {
-			t.Errorf("GetByID() error = %v, want %v", err, products.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
 }
 
@@ -150,13 +126,8 @@ func TestRepository_List(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 10, Offset: 0})
-		if err != nil {
-			t.Fatalf("List() error = %v", err)
-		}
-
-		if len(productsList) != 0 {
-			t.Errorf("List() len = %v, want 0", len(productsList))
-		}
+		require.NoError(t, err)
+		assert.Empty(t, productsList)
 	})
 
 	t.Run("list products with pagination", func(t *testing.T) {
@@ -169,30 +140,18 @@ func TestRepository_List(t *testing.T) {
 
 		// Get first page
 		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 0})
-		if err != nil {
-			t.Fatalf("List() error = %v", err)
-		}
-		if len(productsList) != 2 {
-			t.Errorf("List() len = %v, want 2", len(productsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, productsList, 2)
 
 		// Get second page
 		productsList, err = repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 2})
-		if err != nil {
-			t.Fatalf("List() error = %v", err)
-		}
-		if len(productsList) != 2 {
-			t.Errorf("List() len = %v, want 2", len(productsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, productsList, 2)
 
 		// Get last page
 		productsList, err = repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 4})
-		if err != nil {
-			t.Fatalf("List() error = %v", err)
-		}
-		if len(productsList) != 1 {
-			t.Errorf("List() len = %v, want 1", len(productsList))
-		}
+		require.NoError(t, err)
+		assert.Len(t, productsList, 1)
 	})
 
 	t.Run("list products with average rating", func(t *testing.T) {
@@ -203,19 +162,11 @@ func TestRepository_List(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User2", 3, nil)
 
 		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 10, Offset: 0})
-		if err != nil {
-			t.Fatalf("List() error = %v", err)
-		}
+		require.NoError(t, err)
+		require.Len(t, productsList, 1)
 
-		if len(productsList) != 1 {
-			t.Fatalf("List() len = %v, want 1", len(productsList))
-		}
-
-		if productsList[0].AverageRating == nil {
-			t.Error("List() AverageRating should not be nil")
-		} else if *productsList[0].AverageRating != 4.0 {
-			t.Errorf("List() AverageRating = %v, want %v", *productsList[0].AverageRating, 4.0)
-		}
+		require.NotNil(t, productsList[0].AverageRating)
+		assert.Equal(t, 4.0, *productsList[0].AverageRating)
 	})
 }
 
@@ -235,19 +186,12 @@ func TestRepository_Update(t *testing.T) {
 			Description: &newDesc,
 			Price:       75.00,
 		})
-		if err != nil {
-			t.Fatalf("Update() error = %v", err)
-		}
+		require.NoError(t, err)
 
-		if updated.Name != "Updated Name" {
-			t.Errorf("Update() Name = %v, want %v", updated.Name, "Updated Name")
-		}
-		if updated.Description == nil || *updated.Description != newDesc {
-			t.Errorf("Update() Description = %v, want %v", updated.Description, newDesc)
-		}
-		if updated.Price != 75.00 {
-			t.Errorf("Update() Price = %v, want %v", updated.Price, 75.00)
-		}
+		assert.Equal(t, "Updated Name", updated.Name)
+		require.NotNil(t, updated.Description)
+		assert.Equal(t, newDesc, *updated.Description)
+		assert.Equal(t, 75.00, updated.Price)
 	})
 
 	t.Run("update non-existing product", func(t *testing.T) {
@@ -257,12 +201,8 @@ func TestRepository_Update(t *testing.T) {
 			Name:  "Name",
 			Price: 10.00,
 		})
-		if err == nil {
-			t.Error("Update() expected error for non-existing product")
-		}
-		if err != products.ErrNotFound {
-			t.Errorf("Update() error = %v, want %v", err, products.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
 }
 
@@ -277,27 +217,19 @@ func TestRepository_Delete(t *testing.T) {
 		productID := tdb.CreateTestProduct(t, "To Delete", nil, 10.00)
 
 		err := repo.Delete(ctx, productID)
-		if err != nil {
-			t.Fatalf("Delete() error = %v", err)
-		}
+		require.NoError(t, err)
 
 		// Verify product is deleted
 		_, err = repo.GetByID(ctx, productID)
-		if err != products.ErrNotFound {
-			t.Errorf("GetByID() after delete error = %v, want %v", err, products.ErrNotFound)
-		}
+		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
 
 	t.Run("delete non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
 		err := repo.Delete(ctx, 999999)
-		if err == nil {
-			t.Error("Delete() expected error for non-existing product")
-		}
-		if err != products.ErrNotFound {
-			t.Errorf("Delete() error = %v, want %v", err, products.ErrNotFound)
-		}
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
 
 	t.Run("delete product cascades to reviews", func(t *testing.T) {
@@ -307,19 +239,13 @@ func TestRepository_Delete(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User", 5, nil)
 
 		err := repo.Delete(ctx, productID)
-		if err != nil {
-			t.Fatalf("Delete() error = %v", err)
-		}
+		require.NoError(t, err)
 
 		// Verify reviews are also deleted
 		var count int
 		err = tdb.DB.Get(&count, "SELECT COUNT(*) FROM reviews WHERE product_id = $1", productID)
-		if err != nil {
-			t.Fatalf("failed to count reviews: %v", err)
-		}
-		if count != 0 {
-			t.Errorf("Reviews count = %v, want 0 (should be deleted with product)", count)
-		}
+		require.NoError(t, err)
+		assert.Zero(t, count, "Reviews should be deleted with product")
 	})
 }
 
@@ -334,23 +260,15 @@ func TestRepository_Exists(t *testing.T) {
 		productID := tdb.CreateTestProduct(t, "Product", nil, 10.00)
 
 		exists, err := repo.Exists(ctx, productID)
-		if err != nil {
-			t.Fatalf("Exists() error = %v", err)
-		}
-		if !exists {
-			t.Error("Exists() = false, want true")
-		}
+		require.NoError(t, err)
+		assert.True(t, exists)
 	})
 
 	t.Run("non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
 		exists, err := repo.Exists(ctx, 999999)
-		if err != nil {
-			t.Fatalf("Exists() error = %v", err)
-		}
-		if exists {
-			t.Error("Exists() = true, want false")
-		}
+		require.NoError(t, err)
+		assert.False(t, exists)
 	})
 }
