@@ -2,9 +2,11 @@ package server
 
 import (
 	"context"
+	"log"
 	"net/http"
 	"product_review_hub/internal/api"
 	"product_review_hub/internal/config"
+	"product_review_hub/internal/database"
 	"product_review_hub/internal/handler"
 	"time"
 
@@ -18,12 +20,18 @@ type Server struct {
 }
 
 func New(cfg *config.Config) *Server {
+	// Initialize database
+	db, err := database.New(cfg.Database)
+	if err != nil {
+		log.Fatalf("Failed to initialize database: %v", err)
+	}
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
-	h := handler.New()
+	h := handler.New(db)
 
 	api.HandlerFromMux(h, r)
 
