@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/require"
 )
 
 // TestDB provides a database connection for integration tests.
@@ -46,14 +47,10 @@ func (tdb *TestDB) Cleanup(t *testing.T) {
 
 	// Delete in correct order due to foreign key constraints
 	_, err := tdb.DB.ExecContext(ctx, "DELETE FROM reviews")
-	if err != nil {
-		t.Fatalf("failed to clean up reviews: %v", err)
-	}
+	require.NoError(t, err, "failed to clean up reviews")
 
 	_, err = tdb.DB.ExecContext(ctx, "DELETE FROM products")
-	if err != nil {
-		t.Fatalf("failed to clean up products: %v", err)
-	}
+	require.NoError(t, err, "failed to clean up products")
 }
 
 // Close closes the database connection.
@@ -72,9 +69,7 @@ func (tdb *TestDB) TruncateTables(t *testing.T) {
 	ctx := context.Background()
 
 	_, err := tdb.DB.ExecContext(ctx, "TRUNCATE TABLE reviews, products RESTART IDENTITY CASCADE")
-	if err != nil {
-		t.Fatalf("failed to truncate tables: %v", err)
-	}
+	require.NoError(t, err, "failed to truncate tables")
 }
 
 // SetupTestDB creates a new test database connection and registers cleanup.
@@ -96,9 +91,7 @@ func (tdb *TestDB) MustExec(t *testing.T, query string, args ...interface{}) {
 	t.Helper()
 
 	_, err := tdb.DB.Exec(query, args...)
-	if err != nil {
-		t.Fatalf("failed to execute query %q: %v", query, err)
-	}
+	require.NoError(t, err, "failed to execute query %q", query)
 }
 
 // CreateTestProduct creates a test product and returns its ID.
@@ -108,9 +101,7 @@ func (tdb *TestDB) CreateTestProduct(t *testing.T, name string, description *str
 	var id int64
 	query := `INSERT INTO products (name, description, price) VALUES ($1, $2, $3) RETURNING id`
 	err := tdb.DB.QueryRowx(query, name, description, price).Scan(&id)
-	if err != nil {
-		t.Fatalf("failed to create test product: %v", err)
-	}
+	require.NoError(t, err, "failed to create test product")
 
 	return id
 }
@@ -122,9 +113,7 @@ func (tdb *TestDB) CreateTestReview(t *testing.T, productID int64, author string
 	var id int64
 	query := `INSERT INTO reviews (product_id, author, rating, comment) VALUES ($1, $2, $3, $4) RETURNING id`
 	err := tdb.DB.QueryRowx(query, productID, author, rating, comment).Scan(&id)
-	if err != nil {
-		t.Fatalf("failed to create test review: %v", err)
-	}
+	require.NoError(t, err, "failed to create test review")
 
 	return id
 }

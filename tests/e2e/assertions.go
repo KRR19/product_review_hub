@@ -82,3 +82,137 @@ func (a *ProductAssertions) AssertStatusCode(resp *http.Response, expected int) 
 
 	require.Equal(a.t, expected, resp.StatusCode, "Unexpected status code")
 }
+
+// ReviewAssertions provides assertion helpers for review-related tests.
+type ReviewAssertions struct {
+	t *testing.T
+}
+
+// NewReviewAssertions creates a new ReviewAssertions instance.
+func NewReviewAssertions(t *testing.T) *ReviewAssertions {
+	return &ReviewAssertions{t: t}
+}
+
+// AssertReviewCreated verifies that a review was created successfully.
+func (a *ReviewAssertions) AssertReviewCreated(resp *http.Response, expected api.ReviewCreate, productID string) api.Review {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusCreated, resp.StatusCode, "Expected 201 Created status")
+
+	review := ParseJSON[api.Review](a.t, resp)
+
+	assert.NotEmpty(a.t, review.Id, "Review ID should not be empty")
+	assert.Equal(a.t, productID, review.ProductId, "Product ID mismatch")
+	assert.Equal(a.t, expected.Rating, review.Rating, "Rating mismatch")
+
+	if expected.Author != nil {
+		require.NotNil(a.t, review.Author, "Author should not be nil")
+		assert.Equal(a.t, *expected.Author, *review.Author, "Author mismatch")
+	}
+
+	if expected.Comment != nil {
+		require.NotNil(a.t, review.Comment, "Comment should not be nil")
+		assert.Equal(a.t, *expected.Comment, *review.Comment, "Comment mismatch")
+	}
+
+	return review
+}
+
+// AssertReviewUpdated verifies that a review was updated successfully.
+func (a *ReviewAssertions) AssertReviewUpdated(resp *http.Response, expected api.ReviewUpdate, productID, reviewID string) api.Review {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	review := ParseJSON[api.Review](a.t, resp)
+
+	assert.Equal(a.t, reviewID, review.Id, "Review ID mismatch")
+	assert.Equal(a.t, productID, review.ProductId, "Product ID mismatch")
+	assert.Equal(a.t, expected.Rating, review.Rating, "Rating mismatch")
+
+	if expected.Author != nil {
+		require.NotNil(a.t, review.Author, "Author should not be nil")
+		assert.Equal(a.t, *expected.Author, *review.Author, "Author mismatch")
+	}
+
+	if expected.Comment != nil {
+		require.NotNil(a.t, review.Comment, "Comment should not be nil")
+		assert.Equal(a.t, *expected.Comment, *review.Comment, "Comment mismatch")
+	}
+
+	return review
+}
+
+// AssertReviewsList verifies the reviews list response.
+func (a *ReviewAssertions) AssertReviewsList(resp *http.Response, expectedCount int) []api.Review {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	reviews := ParseJSON[[]api.Review](a.t, resp)
+	assert.Len(a.t, reviews, expectedCount, "Reviews count mismatch")
+
+	return reviews
+}
+
+// AssertBadRequest verifies that the response is a 400 Bad Request.
+func (a *ReviewAssertions) AssertBadRequest(resp *http.Response) api.ErrorResponse {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusBadRequest, resp.StatusCode, "Expected 400 Bad Request status")
+
+	errorResp := ParseJSON[api.ErrorResponse](a.t, resp)
+	assert.NotEmpty(a.t, errorResp.Error, "Error message should not be empty")
+
+	return errorResp
+}
+
+// AssertBadRequestWithMessage verifies that the response is a 400 Bad Request with specific message.
+func (a *ReviewAssertions) AssertBadRequestWithMessage(resp *http.Response, expectedMessage string) {
+	a.t.Helper()
+
+	errorResp := a.AssertBadRequest(resp)
+	assert.Contains(a.t, errorResp.Error, expectedMessage, "Error message should contain expected text")
+}
+
+// AssertNotFound verifies that the response is a 404 Not Found.
+func (a *ReviewAssertions) AssertNotFound(resp *http.Response) api.ErrorResponse {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusNotFound, resp.StatusCode, "Expected 404 Not Found status")
+
+	errorResp := ParseJSON[api.ErrorResponse](a.t, resp)
+	assert.NotEmpty(a.t, errorResp.Error, "Error message should not be empty")
+
+	return errorResp
+}
+
+// AssertNotFoundWithMessage verifies that the response is a 404 Not Found with specific message.
+func (a *ReviewAssertions) AssertNotFoundWithMessage(resp *http.Response, expectedMessage string) {
+	a.t.Helper()
+
+	errorResp := a.AssertNotFound(resp)
+	assert.Contains(a.t, errorResp.Error, expectedMessage, "Error message should contain expected text")
+}
+
+// AssertNoContent verifies that the response is a 204 No Content.
+func (a *ReviewAssertions) AssertNoContent(resp *http.Response) {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusNoContent, resp.StatusCode, "Expected 204 No Content status")
+}
+
+// AssertContentTypeJSON verifies that the response has JSON content type.
+func (a *ReviewAssertions) AssertContentTypeJSON(resp *http.Response) {
+	a.t.Helper()
+
+	contentType := resp.Header.Get("Content-Type")
+	assert.Contains(a.t, contentType, "application/json", "Content-Type should be application/json")
+}
+
+// AssertStatusCode verifies that the response has the expected status code.
+func (a *ReviewAssertions) AssertStatusCode(resp *http.Response, expected int) {
+	a.t.Helper()
+
+	require.Equal(a.t, expected, resp.StatusCode, "Unexpected status code")
+}

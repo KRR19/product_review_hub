@@ -115,3 +115,127 @@ func (f *ProductFixtures) CreateRequestWithMaxPrice() api.ProductCreate {
 		Price:       9999999.99,
 	}
 }
+
+// ReviewFixtures provides test data for review-related tests.
+type ReviewFixtures struct{}
+
+// NewReviewFixtures creates a new ReviewFixtures instance.
+func NewReviewFixtures() *ReviewFixtures {
+	return &ReviewFixtures{}
+}
+
+// ValidCreateRequest returns a valid ReviewCreate request with minimal data.
+func (f *ReviewFixtures) ValidCreateRequest() api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: 5,
+	}
+}
+
+// ValidCreateRequestWithRating returns a valid ReviewCreate request with custom rating.
+func (f *ReviewFixtures) ValidCreateRequestWithRating(rating int) api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: rating,
+	}
+}
+
+// ValidCreateRequestFull returns a valid ReviewCreate request with all fields.
+func (f *ReviewFixtures) ValidCreateRequestFull() api.ReviewCreate {
+	author := "John Doe"
+	comment := "Great product! Highly recommended."
+	return api.ReviewCreate{
+		Rating:  5,
+		Author:  &author,
+		Comment: &comment,
+	}
+}
+
+// ValidCreateRequestWithAuthor returns a valid ReviewCreate request with author.
+func (f *ReviewFixtures) ValidCreateRequestWithAuthor(author string) api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: 4,
+		Author: &author,
+	}
+}
+
+// ValidCreateRequestWithComment returns a valid ReviewCreate request with comment.
+func (f *ReviewFixtures) ValidCreateRequestWithComment(comment string) api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating:  4,
+		Comment: &comment,
+	}
+}
+
+// CreateRequestWithZeroRating returns a ReviewCreate request with zero rating.
+func (f *ReviewFixtures) CreateRequestWithZeroRating() api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: 0,
+	}
+}
+
+// CreateRequestWithNegativeRating returns a ReviewCreate request with negative rating.
+func (f *ReviewFixtures) CreateRequestWithNegativeRating() api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: -1,
+	}
+}
+
+// CreateRequestWithRatingAboveMax returns a ReviewCreate request with rating above 5.
+func (f *ReviewFixtures) CreateRequestWithRatingAboveMax() api.ReviewCreate {
+	return api.ReviewCreate{
+		Rating: 6,
+	}
+}
+
+// ValidUpdateRequest returns a valid ReviewUpdate request.
+func (f *ReviewFixtures) ValidUpdateRequest() api.ReviewUpdate {
+	return api.ReviewUpdate{
+		Rating: 4,
+	}
+}
+
+// ValidUpdateRequestFull returns a valid ReviewUpdate request with all fields.
+func (f *ReviewFixtures) ValidUpdateRequestFull() api.ReviewUpdate {
+	author := "Jane Doe"
+	comment := "Updated review - still great!"
+	return api.ReviewUpdate{
+		Rating:  4,
+		Author:  &author,
+		Comment: &comment,
+	}
+}
+
+// UpdateRequestWithZeroRating returns a ReviewUpdate request with zero rating.
+func (f *ReviewFixtures) UpdateRequestWithZeroRating() api.ReviewUpdate {
+	return api.ReviewUpdate{
+		Rating: 0,
+	}
+}
+
+// UpdateRequestWithRatingAboveMax returns a ReviewUpdate request with rating above 5.
+func (f *ReviewFixtures) UpdateRequestWithRatingAboveMax() api.ReviewUpdate {
+	return api.ReviewUpdate{
+		Rating: 6,
+	}
+}
+
+// CreateRequestWithUnicode returns a ReviewCreate request with unicode characters.
+func (f *ReviewFixtures) CreateRequestWithUnicode() api.ReviewCreate {
+	author := "Иван Петров"
+	comment := "Отличный продукт! 五星好评 🌟"
+	return api.ReviewCreate{
+		Rating:  5,
+		Author:  &author,
+		Comment: &comment,
+	}
+}
+
+// CreateRequestWithSpecialChars returns a ReviewCreate request with special characters.
+func (f *ReviewFixtures) CreateRequestWithSpecialChars() api.ReviewCreate {
+	author := "John 'The Reviewer' Doe"
+	comment := "Great <product> with \"quotes\" & special chars!"
+	return api.ReviewCreate{
+		Rating:  5,
+		Author:  &author,
+		Comment: &comment,
+	}
+}

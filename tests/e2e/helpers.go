@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	"product_review_hub/internal/api"
 )
 
 // RequestOption is a function that modifies an HTTP request.
@@ -99,6 +101,62 @@ func (c *HTTPClient) Get(path string, opts ...RequestOption) *http.Response {
 	return resp
 }
 
+// Put sends a PUT request with JSON body.
+func (c *HTTPClient) Put(path string, body interface{}, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	jsonBody, err := json.Marshal(body)
+	require.NoError(c.t, err, "Failed to marshal request body")
+
+	req, err := http.NewRequest(http.MethodPut, c.baseURL+path, bytes.NewBuffer(jsonBody))
+	require.NoError(c.t, err, "Failed to create request")
+
+	req.Header.Set("Content-Type", "application/json")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
+// PutRaw sends a PUT request with raw body.
+func (c *HTTPClient) PutRaw(path string, body []byte, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	req, err := http.NewRequest(http.MethodPut, c.baseURL+path, bytes.NewBuffer(body))
+	require.NoError(c.t, err, "Failed to create request")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
+// Delete sends a DELETE request.
+func (c *HTTPClient) Delete(path string, opts ...RequestOption) *http.Response {
+	c.t.Helper()
+
+	req, err := http.NewRequest(http.MethodDelete, c.baseURL+path, nil)
+	require.NoError(c.t, err, "Failed to create request")
+
+	for _, opt := range opts {
+		opt(req)
+	}
+
+	resp, err := c.client.Do(req)
+	require.NoError(c.t, err, "Failed to send request")
+
+	return resp
+}
+
 // ParseJSON parses the response body as JSON into the provided struct.
 func ParseJSON[T any](t *testing.T, resp *http.Response) T {
 	t.Helper()
@@ -125,4 +183,41 @@ func ReadBody(t *testing.T, resp *http.Response) string {
 	require.NoError(t, err, "Failed to read response body")
 
 	return string(body)
+}
+
+// CreateTestProduct creates a product and returns its ID.
+// This is a common helper for review tests.
+func CreateTestProduct(t *testing.T, env *TestEnv, client *HTTPClient) string {
+	t.Helper()
+	env.CleanupProducts(t)
+	productFixtures := NewProductFixtures()
+	req := productFixtures.ValidCreateRequest()
+	resp := client.Post("/api/v1/products", req)
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "Failed to create product")
+	product := ParseJSON[api.Product](t, resp)
+	return product.Id
+}
+
+// createTestReviewWithRequest is an internal helper that creates a review with the provided request.
+func createTestReviewWithRequest(t *testing.T, client *HTTPClient, productID string, req interface{}) api.Review {
+	t.Helper()
+	resp := client.Post("/api/v1/products/"+productID+"/reviews", req)
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "Failed to create review")
+	return ParseJSON[api.Review](t, resp)
+}
+
+// CreateTestReview creates a review with full data and returns it.
+func CreateTestReview(t *testing.T, client *HTTPClient, productID string) api.Review {
+	t.Helper()
+	reviewFixtures := NewReviewFixtures()
+	req := reviewFixtures.ValidCreateRequestFull()
+	return createTestReviewWithRequest(t, client, productID, req)
+}
+
+// CreateTestReviewWithRating creates a review with specified rating and returns it.
+func CreateTestReviewWithRating(t *testing.T, client *HTTPClient, productID string, rating int) api.Review {
+	t.Helper()
+	reviewFixtures := NewReviewFixtures()
+	req := reviewFixtures.ValidCreateRequestWithRating(rating)
+	return createTestReviewWithRequest(t, client, productID, req)
 }

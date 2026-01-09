@@ -14,10 +14,12 @@ import (
 	"product_review_hub/internal/database"
 	"product_review_hub/internal/handler"
 	"product_review_hub/internal/repository/products"
+	"product_review_hub/internal/repository/reviews"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jmoiron/sqlx"
+	"github.com/stretchr/testify/require"
 )
 
 // TestEnv holds the test environment configuration and resources.
@@ -64,9 +66,18 @@ func (env *TestEnv) CleanupProducts(t *testing.T) {
 	defer cancel()
 
 	_, err := env.DB.ExecContext(ctx, "TRUNCATE TABLE products CASCADE")
-	if err != nil {
-		t.Fatalf("Failed to cleanup products: %v", err)
-	}
+	require.NoError(t, err, "Failed to cleanup products")
+}
+
+// CleanupReviews removes all reviews from the database.
+func (env *TestEnv) CleanupReviews(t *testing.T) {
+	t.Helper()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := env.DB.ExecContext(ctx, "TRUNCATE TABLE reviews CASCADE")
+	require.NoError(t, err, "Failed to cleanup reviews")
 }
 
 // setupDatabase creates a database connection using test environment variables.
@@ -86,9 +97,7 @@ func setupDatabase(t *testing.T) *sqlx.DB {
 	}
 
 	db, err := database.New(cfg)
-	if err != nil {
-		t.Fatalf("Failed to connect to test database: %v", err)
-	}
+	require.NoError(t, err, "Failed to connect to test database")
 
 	return db
 }
@@ -102,7 +111,8 @@ func setupServer(t *testing.T, db *sqlx.DB) *httptest.Server {
 	r.Use(middleware.Recoverer)
 
 	productRepo := products.NewRepository(db)
-	h := handler.New(db, productRepo)
+	reviewRepo := reviews.NewRepository(db)
+	h := handler.New(db, productRepo, reviewRepo)
 
 	api.HandlerFromMux(h, r)
 
