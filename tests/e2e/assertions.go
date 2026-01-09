@@ -83,6 +83,105 @@ func (a *ProductAssertions) AssertStatusCode(resp *http.Response, expected int) 
 	require.Equal(a.t, expected, resp.StatusCode, "Unexpected status code")
 }
 
+// AssertProductUpdated verifies that a product was updated successfully.
+func (a *ProductAssertions) AssertProductUpdated(resp *http.Response, expected api.ProductUpdate, productID string) api.Product {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	product := ParseJSON[api.Product](a.t, resp)
+
+	assert.Equal(a.t, productID, product.Id, "Product ID mismatch")
+	assert.Equal(a.t, expected.Name, product.Name, "Product name mismatch")
+	assert.Equal(a.t, expected.Description, product.Description, "Product description mismatch")
+	assert.InDelta(a.t, expected.Price, product.Price, 0.01, "Product price mismatch")
+
+	return product
+}
+
+// AssertProductsList verifies the products list response.
+func (a *ProductAssertions) AssertProductsList(resp *http.Response, expectedMinCount int) []api.Product {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	products := ParseJSON[[]api.Product](a.t, resp)
+	assert.GreaterOrEqual(a.t, len(products), expectedMinCount, "Products count should be at least expected")
+
+	return products
+}
+
+// AssertProductsListExact verifies the products list response with exact count.
+func (a *ProductAssertions) AssertProductsListExact(resp *http.Response, expectedCount int) []api.Product {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	products := ParseJSON[[]api.Product](a.t, resp)
+	assert.Len(a.t, products, expectedCount, "Products count mismatch")
+
+	return products
+}
+
+// AssertNotFound verifies that the response is a 404 Not Found.
+func (a *ProductAssertions) AssertNotFound(resp *http.Response) api.ErrorResponse {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusNotFound, resp.StatusCode, "Expected 404 Not Found status")
+
+	errorResp := ParseJSON[api.ErrorResponse](a.t, resp)
+	assert.NotEmpty(a.t, errorResp.Error, "Error message should not be empty")
+
+	return errorResp
+}
+
+// AssertNotFoundWithMessage verifies that the response is a 404 Not Found with specific message.
+func (a *ProductAssertions) AssertNotFoundWithMessage(resp *http.Response, expectedMessage string) {
+	a.t.Helper()
+
+	errorResp := a.AssertNotFound(resp)
+	assert.Contains(a.t, errorResp.Error, expectedMessage, "Error message should contain expected text")
+}
+
+// AssertNoContent verifies that the response is a 204 No Content.
+func (a *ProductAssertions) AssertNoContent(resp *http.Response) {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusNoContent, resp.StatusCode, "Expected 204 No Content status")
+}
+
+// AssertConflict verifies that the response is a 409 Conflict.
+func (a *ProductAssertions) AssertConflict(resp *http.Response) api.ErrorResponse {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusConflict, resp.StatusCode, "Expected 409 Conflict status")
+
+	errorResp := ParseJSON[api.ErrorResponse](a.t, resp)
+	assert.NotEmpty(a.t, errorResp.Error, "Error message should not be empty")
+
+	return errorResp
+}
+
+// AssertConflictWithMessage verifies that the response is a 409 Conflict with specific message.
+func (a *ProductAssertions) AssertConflictWithMessage(resp *http.Response, expectedMessage string) {
+	a.t.Helper()
+
+	errorResp := a.AssertConflict(resp)
+	assert.Contains(a.t, errorResp.Error, expectedMessage, "Error message should contain expected text")
+}
+
+// AssertProductByID verifies a single product response by GET.
+func (a *ProductAssertions) AssertProductByID(resp *http.Response, expectedID string) api.Product {
+	a.t.Helper()
+
+	require.Equal(a.t, http.StatusOK, resp.StatusCode, "Expected 200 OK status")
+
+	product := ParseJSON[api.Product](a.t, resp)
+	assert.Equal(a.t, expectedID, product.Id, "Product ID mismatch")
+
+	return product
+}
+
 // ReviewAssertions provides assertion helpers for review-related tests.
 type ReviewAssertions struct {
 	t *testing.T

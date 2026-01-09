@@ -27,6 +27,7 @@ type ReviewRepository interface {
 	ListByProductID(ctx context.Context, params models.ListReviewsParams) ([]models.Review, error)
 	UpdateByIDAndProductID(ctx context.Context, id, productID int64, params models.UpdateReviewParams) (*models.Review, error)
 	DeleteByIDAndProductID(ctx context.Context, id, productID int64) error
+	HasReviewsByProductID(ctx context.Context, productID int64) (bool, error)
 }
 
 // Handler implements all API handlers.

@@ -202,3 +202,16 @@ func (r *Repository) GetAverageRatingByProductID(ctx context.Context, productID 
 
 	return avgRating, nil
 }
+
+// HasReviewsByProductID checks if a product has any reviews.
+func (r *Repository) HasReviewsByProductID(ctx context.Context, productID int64) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM reviews WHERE product_id = $1)`
+
+	var exists bool
+	err := r.db.QueryRowxContext(ctx, query, productID).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("failed to check reviews existence: %w", err)
+	}
+
+	return exists, nil
+}

@@ -221,3 +221,18 @@ func CreateTestReviewWithRating(t *testing.T, client *HTTPClient, productID stri
 	req := reviewFixtures.ValidCreateRequestWithRating(rating)
 	return createTestReviewWithRequest(t, client, productID, req)
 }
+
+// ProductResponse is an alias for api.Product for use in tests.
+type ProductResponse = api.Product
+
+// CreateTestProductWithoutCleanup creates a product without cleaning up existing products.
+// Useful when you need to create multiple products.
+func CreateTestProductWithoutCleanup(t *testing.T, client *HTTPClient) string {
+	t.Helper()
+	productFixtures := NewProductFixtures()
+	req := productFixtures.ValidCreateRequest()
+	resp := client.Post("/api/v1/products", req)
+	require.Equal(t, http.StatusCreated, resp.StatusCode, "Failed to create product")
+	product := ParseJSON[api.Product](t, resp)
+	return product.Id
+}

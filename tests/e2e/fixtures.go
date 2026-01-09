@@ -116,6 +116,51 @@ func (f *ProductFixtures) CreateRequestWithMaxPrice() api.ProductCreate {
 	}
 }
 
+// ValidUpdateRequest returns a valid ProductUpdate request.
+func (f *ProductFixtures) ValidUpdateRequest() api.ProductUpdate {
+	return api.ProductUpdate{
+		Name:        "Updated Product",
+		Description: "An updated product description",
+		Price:       149.99,
+	}
+}
+
+// ValidUpdateRequestWithData returns a ProductUpdate with custom data.
+func (f *ProductFixtures) ValidUpdateRequestWithData(name, desc string, price float32) api.ProductUpdate {
+	return api.ProductUpdate{
+		Name:        name,
+		Description: desc,
+		Price:       price,
+	}
+}
+
+// UpdateRequestWithEmptyName returns a ProductUpdate request with empty name.
+func (f *ProductFixtures) UpdateRequestWithEmptyName() api.ProductUpdate {
+	return api.ProductUpdate{
+		Name:        "",
+		Description: "A test product description",
+		Price:       99.99,
+	}
+}
+
+// UpdateRequestWithZeroPrice returns a ProductUpdate request with zero price.
+func (f *ProductFixtures) UpdateRequestWithZeroPrice() api.ProductUpdate {
+	return api.ProductUpdate{
+		Name:        "Test Product",
+		Description: "A test product description",
+		Price:       0,
+	}
+}
+
+// UpdateRequestWithNegativePrice returns a ProductUpdate request with negative price.
+func (f *ProductFixtures) UpdateRequestWithNegativePrice() api.ProductUpdate {
+	return api.ProductUpdate{
+		Name:        "Test Product",
+		Description: "A test product description",
+		Price:       -10.00,
+	}
+}
+
 // ReviewFixtures provides test data for review-related tests.
 type ReviewFixtures struct{}
 

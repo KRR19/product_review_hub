@@ -47,6 +47,7 @@ func (r *Repository) Create(ctx context.Context, params models.CreateProductPara
 
 // GetByID retrieves a product by its ID with average rating.
 func (r *Repository) GetByID(ctx context.Context, id int64) (*models.ProductWithRating, error) {
+	//this query is not efficient because it joins the reviews table on every product but for this simple project it is fine
 	query := `
 		SELECT 
 			p.id, p.name, p.description, p.price, p.created_at, p.updated_at,
@@ -71,6 +72,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.ProductWith
 
 // List retrieves a list of products with pagination.
 func (r *Repository) List(ctx context.Context, params models.ListProductsParams) ([]models.ProductWithRating, error) {
+	//this query is not efficient because it joins the reviews table on every product but for this simple project it is fine
 	query := `
 		SELECT 
 			p.id, p.name, p.description, p.price, p.created_at, p.updated_at,
