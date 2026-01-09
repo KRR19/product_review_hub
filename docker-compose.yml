@@ -61,6 +61,23 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: product_review_hub_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - product_review_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
+
   migrate:
     image: migrate/migrate
     container_name: product_review_hub_migrate
@@ -105,6 +122,8 @@ services:
       - RABBITMQ_PORT=5672
       - RABBITMQ_USER=guest
       - RABBITMQ_PASSWORD=guest
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     restart: unless-stopped
     networks:
       - product_review_network
@@ -113,6 +132,8 @@ services:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
 
@@ -120,6 +141,7 @@ volumes:
   postgres_data:
   postgres_test_data:
   rabbitmq_data:
+  redis_data:
 
 networks:
   product_review_network:
