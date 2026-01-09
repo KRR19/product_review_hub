@@ -41,6 +41,26 @@ services:
       timeout: 5s
       retries: 5
 
+  rabbitmq:
+    image: rabbitmq:3.12-management-alpine
+    container_name: product_review_hub_rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"   # AMQP protocol port
+      - "15672:15672" # Management UI port
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - product_review_network
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics -q ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   migrate:
     image: migrate/migrate
     container_name: product_review_hub_migrate
@@ -81,11 +101,17 @@ services:
       - DB_USER=postgres
       - DB_PASSWORD=postgres
       - DB_NAME=product_review_hub
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
     restart: unless-stopped
     networks:
       - product_review_network
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
       migrate:
         condition: service_completed_successfully
@@ -93,6 +119,7 @@ services:
 volumes:
   postgres_data:
   postgres_test_data:
+  rabbitmq_data:
 
 networks:
   product_review_network:
