@@ -54,7 +54,11 @@ func TestRepository_Create(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tdb.Cleanup(t)
 
-			product, err := repo.Create(ctx, tt.params)
+			tx, err := repo.BeginTx(ctx)
+			require.NoError(t, err)
+			defer tx.Rollback()
+
+			product, err := repo.Create(ctx, tx, tt.params)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return
@@ -70,6 +74,8 @@ func TestRepository_Create(t *testing.T) {
 			assert.Equal(t, tt.params.Price, product.Price)
 			assert.False(t, product.CreatedAt.IsZero())
 			assert.False(t, product.UpdatedAt.IsZero())
+
+			require.NoError(t, repo.CommitTx(ctx, tx))
 		})
 	}
 }
@@ -85,12 +91,18 @@ func TestRepository_GetByID(t *testing.T) {
 		desc := "Test Description"
 		productID := tdb.CreateTestProduct(t, "Test Product", &desc, 99.99)
 
-		product, err := repo.GetByID(ctx, productID)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		product, err := repo.GetByID(ctx, tx, productID)
 		require.NoError(t, err)
 
 		assert.Equal(t, productID, product.ID)
 		assert.Equal(t, "Test Product", product.Name)
 		assert.Nil(t, product.AverageRating)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("get product with reviews", func(t *testing.T) {
@@ -101,17 +113,27 @@ func TestRepository_GetByID(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User1", 5, nil)
 		tdb.CreateTestReview(t, productID, "User2", 3, nil)
 
-		product, err := repo.GetByID(ctx, productID)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		product, err := repo.GetByID(ctx, tx, productID)
 		require.NoError(t, err)
 
 		require.NotNil(t, product.AverageRating)
 		assert.Equal(t, 4.0, *product.AverageRating)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("get non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
-		_, err := repo.GetByID(ctx, 999999)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		_, err = repo.GetByID(ctx, tx, 999999)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
@@ -125,9 +147,15 @@ func TestRepository_List(t *testing.T) {
 	t.Run("list empty products", func(t *testing.T) {
 		tdb.Cleanup(t)
 
-		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 10, Offset: 0})
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		productsList, err := repo.List(ctx, tx, models.ListProductsParams{Limit: 10, Offset: 0})
 		require.NoError(t, err)
 		assert.Empty(t, productsList)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("list products with pagination", func(t *testing.T) {
@@ -138,20 +166,26 @@ func TestRepository_List(t *testing.T) {
 			tdb.CreateTestProduct(t, "Product", nil, float64(i*10))
 		}
 
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
 		// Get first page
-		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 0})
+		productsList, err := repo.List(ctx, tx, models.ListProductsParams{Limit: 2, Offset: 0})
 		require.NoError(t, err)
 		assert.Len(t, productsList, 2)
 
 		// Get second page
-		productsList, err = repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 2})
+		productsList, err = repo.List(ctx, tx, models.ListProductsParams{Limit: 2, Offset: 2})
 		require.NoError(t, err)
 		assert.Len(t, productsList, 2)
 
 		// Get last page
-		productsList, err = repo.List(ctx, models.ListProductsParams{Limit: 2, Offset: 4})
+		productsList, err = repo.List(ctx, tx, models.ListProductsParams{Limit: 2, Offset: 4})
 		require.NoError(t, err)
 		assert.Len(t, productsList, 1)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("list products with average rating", func(t *testing.T) {
@@ -161,12 +195,18 @@ func TestRepository_List(t *testing.T) {
 		tdb.CreateTestReview(t, productID, "User1", 5, nil)
 		tdb.CreateTestReview(t, productID, "User2", 3, nil)
 
-		productsList, err := repo.List(ctx, models.ListProductsParams{Limit: 10, Offset: 0})
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		productsList, err := repo.List(ctx, tx, models.ListProductsParams{Limit: 10, Offset: 0})
 		require.NoError(t, err)
 		require.Len(t, productsList, 1)
 
 		require.NotNil(t, productsList[0].AverageRating)
 		assert.Equal(t, 4.0, *productsList[0].AverageRating)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 }
 
@@ -180,8 +220,12 @@ func TestRepository_Update(t *testing.T) {
 
 		productID := tdb.CreateTestProduct(t, "Original Name", nil, 50.00)
 
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
 		newDesc := "Updated Description"
-		updated, err := repo.Update(ctx, productID, models.UpdateProductParams{
+		updated, err := repo.Update(ctx, tx, productID, models.UpdateProductParams{
 			Name:        "Updated Name",
 			Description: &newDesc,
 			Price:       75.00,
@@ -192,12 +236,18 @@ func TestRepository_Update(t *testing.T) {
 		require.NotNil(t, updated.Description)
 		assert.Equal(t, newDesc, *updated.Description)
 		assert.Equal(t, 75.00, updated.Price)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("update non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
-		_, err := repo.Update(ctx, 999999, models.UpdateProductParams{
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		_, err = repo.Update(ctx, tx, 999999, models.UpdateProductParams{
 			Name:  "Name",
 			Price: 10.00,
 		})
@@ -216,18 +266,32 @@ func TestRepository_Delete(t *testing.T) {
 
 		productID := tdb.CreateTestProduct(t, "To Delete", nil, 10.00)
 
-		err := repo.Delete(ctx, productID)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		err = repo.Delete(ctx, tx, productID)
 		require.NoError(t, err)
 
+		require.NoError(t, repo.CommitTx(ctx, tx))
+
 		// Verify product is deleted
-		_, err = repo.GetByID(ctx, productID)
+		tx2, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx2.Rollback()
+
+		_, err = repo.GetByID(ctx, tx2, productID)
 		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
 
 	t.Run("delete non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
-		err := repo.Delete(ctx, 999999)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		err = repo.Delete(ctx, tx, 999999)
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, products.ErrNotFound)
 	})
@@ -238,8 +302,14 @@ func TestRepository_Delete(t *testing.T) {
 		productID := tdb.CreateTestProduct(t, "Product", nil, 10.00)
 		tdb.CreateTestReview(t, productID, "User", 5, nil)
 
-		err := repo.Delete(ctx, productID)
+		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
+		defer tx.Rollback()
+
+		err = repo.Delete(ctx, tx, productID)
+		require.NoError(t, err)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 
 		// Verify reviews are also deleted
 		var count int
@@ -259,16 +329,28 @@ func TestRepository_Exists(t *testing.T) {
 
 		productID := tdb.CreateTestProduct(t, "Product", nil, 10.00)
 
-		exists, err := repo.Exists(ctx, productID)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		exists, err := repo.Exists(ctx, tx, productID)
 		require.NoError(t, err)
 		assert.True(t, exists)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 
 	t.Run("non-existing product", func(t *testing.T) {
 		tdb.Cleanup(t)
 
-		exists, err := repo.Exists(ctx, 999999)
+		tx, err := repo.BeginTx(ctx)
+		require.NoError(t, err)
+		defer tx.Rollback()
+
+		exists, err := repo.Exists(ctx, tx, 999999)
 		require.NoError(t, err)
 		assert.False(t, exists)
+
+		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
 }

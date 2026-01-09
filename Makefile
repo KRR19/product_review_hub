@@ -81,7 +81,7 @@ test-with-docker:
 	@echo "Running migrations..."
 	docker-compose up migrate_test
 	@echo "Running tests..."
-	TEST_DB_HOST=localhost TEST_DB_PORT=5433 TEST_DB_USER=postgres TEST_DB_PASSWORD=postgres TEST_DB_NAME=product_review_hub_test go test -v ./... || (docker-compose down && exit 1)
+	TEST_DB_HOST=localhost TEST_DB_PORT=5433 TEST_DB_USER=postgres TEST_DB_PASSWORD=postgres TEST_DB_NAME=product_review_hub_test go test -p 1 -v ./... || (docker-compose down && exit 1)
 	@echo "Stopping containers..."
 	docker-compose down
 	@echo "Tests completed successfully!"
@@ -95,7 +95,7 @@ test-e2e:
 	@echo "Running migrations..."
 	docker-compose up migrate_test
 	@echo "Running e2e tests..."
-	TEST_DB_HOST=localhost TEST_DB_PORT=5433 TEST_DB_USER=postgres TEST_DB_PASSWORD=postgres TEST_DB_NAME=product_review_hub_test go test -v ./tests/e2e/... || (docker-compose down && exit 1)
+	TEST_DB_HOST=localhost TEST_DB_PORT=5433 TEST_DB_USER=postgres TEST_DB_PASSWORD=postgres TEST_DB_NAME=product_review_hub_test go test -p 1 -v ./tests/e2e/... || (docker-compose down && exit 1)
 	@echo "Stopping containers..."
 	docker-compose down
 	@echo "E2E tests completed successfully!"

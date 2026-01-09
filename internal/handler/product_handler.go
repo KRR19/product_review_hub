@@ -37,10 +37,24 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 		Price:       float64(req.Price),
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Create product in database
-	product, err := h.ProductRepo.Create(r.Context(), params)
+	product, err := h.ProductRepo.Create(r.Context(), tx, params)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to create product")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -89,13 +103,27 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request, params api
 		}
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Fetch products from database
-	productList, err := h.ProductRepo.List(r.Context(), models.ListProductsParams{
+	productList, err := h.ProductRepo.List(r.Context(), tx, models.ListProductsParams{
 		Limit:  limit,
 		Offset: offset,
 	})
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to fetch products")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -117,14 +145,28 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request, product
 		return
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Fetch product from database
-	product, err := h.ProductRepo.GetByID(r.Context(), id)
+	product, err := h.ProductRepo.GetByID(r.Context(), tx, id)
 	if err != nil {
 		if errors.Is(err, products.ErrNotFound) {
 			responseError(w, http.StatusNotFound, "Product not found")
 			return
 		}
 		responseError(w, http.StatusInternalServerError, "Failed to fetch product")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -160,8 +202,16 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request, productI
 		Price:       float64(req.Price),
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Update product in database
-	product, err := h.ProductRepo.Update(r.Context(), id, params)
+	product, err := h.ProductRepo.Update(r.Context(), tx, id, params)
 	if err != nil {
 		if errors.Is(err, products.ErrNotFound) {
 			responseError(w, http.StatusNotFound, "Product not found")
@@ -172,9 +222,15 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request, productI
 	}
 
 	// Fetch product with rating for response
-	productWithRating, err := h.ProductRepo.GetByID(r.Context(), product.ID)
+	productWithRating, err := h.ProductRepo.GetByID(r.Context(), tx, product.ID)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to fetch updated product")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -200,8 +256,16 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request, productI
 		return
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Check if product exists
-	exists, err := h.ProductRepo.Exists(r.Context(), id)
+	exists, err := h.ProductRepo.Exists(r.Context(), tx, id)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to check product existence")
 		return
@@ -212,7 +276,7 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request, productI
 	}
 
 	// Check if product has reviews
-	hasReviews, err := h.ReviewRepo.HasReviewsByProductID(r.Context(), id)
+	hasReviews, err := h.ReviewRepo.HasReviewsByProductID(r.Context(), tx, id)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to check product reviews")
 		return
@@ -223,13 +287,19 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request, productI
 	}
 
 	// Delete product
-	err = h.ProductRepo.Delete(r.Context(), id)
+	err = h.ProductRepo.Delete(r.Context(), tx, id)
 	if err != nil {
 		if errors.Is(err, products.ErrNotFound) {
 			responseError(w, http.StatusNotFound, "Product not found")
 			return
 		}
 		responseError(w, http.StatusInternalServerError, "Failed to delete product")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 

@@ -187,9 +187,9 @@ func ReadBody(t *testing.T, resp *http.Response) string {
 
 // CreateTestProduct creates a product and returns its ID.
 // This is a common helper for review tests.
+// Note: Does NOT cleanup products - call env.CleanupProducts(t) explicitly if needed.
 func CreateTestProduct(t *testing.T, env *TestEnv, client *HTTPClient) string {
 	t.Helper()
-	env.CleanupProducts(t)
 	productFixtures := NewProductFixtures()
 	req := productFixtures.ValidCreateRequest()
 	resp := client.Post("/api/v1/products", req)

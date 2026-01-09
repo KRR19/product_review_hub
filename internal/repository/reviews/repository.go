@@ -27,8 +27,16 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
+	return r.db.BeginTxx(ctx, nil)
+}
+
+func (r *Repository) CommitTx(ctx context.Context, tx *sqlx.Tx) error {
+	return tx.Commit()
+}
+
 // Create inserts a new review into the database.
-func (r *Repository) Create(ctx context.Context, params models.CreateReviewParams) (*models.Review, error) {
+func (r *Repository) Create(ctx context.Context, tx *sqlx.Tx, params models.CreateReviewParams) (*models.Review, error) {
 	query := `
 		INSERT INTO reviews (product_id, author, rating, comment)
 		VALUES ($1, $2, $3, $4)
@@ -36,7 +44,7 @@ func (r *Repository) Create(ctx context.Context, params models.CreateReviewParam
 	`
 
 	var review models.Review
-	err := r.db.QueryRowxContext(ctx, query, params.ProductID, params.Author, params.Rating, params.Comment).
+	err := tx.QueryRowxContext(ctx, query, params.ProductID, params.Author, params.Rating, params.Comment).
 		StructScan(&review)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create review: %w", err)
@@ -46,7 +54,7 @@ func (r *Repository) Create(ctx context.Context, params models.CreateReviewParam
 }
 
 // GetByID retrieves a review by its ID.
-func (r *Repository) GetByID(ctx context.Context, id int64) (*models.Review, error) {
+func (r *Repository) GetByID(ctx context.Context, tx *sqlx.Tx, id int64) (*models.Review, error) {
 	query := `
 		SELECT id, product_id, author, rating, comment, created_at, updated_at
 		FROM reviews
@@ -54,7 +62,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.Review, err
 	`
 
 	var review models.Review
-	err := r.db.QueryRowxContext(ctx, query, id).StructScan(&review)
+	err := tx.QueryRowxContext(ctx, query, id).StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -66,7 +74,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.Review, err
 }
 
 // GetByIDAndProductID retrieves a review by its ID and product ID.
-func (r *Repository) GetByIDAndProductID(ctx context.Context, id, productID int64) (*models.Review, error) {
+func (r *Repository) GetByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64) (*models.Review, error) {
 	query := `
 		SELECT id, product_id, author, rating, comment, created_at, updated_at
 		FROM reviews
@@ -74,7 +82,7 @@ func (r *Repository) GetByIDAndProductID(ctx context.Context, id, productID int6
 	`
 
 	var review models.Review
-	err := r.db.QueryRowxContext(ctx, query, id, productID).StructScan(&review)
+	err := tx.QueryRowxContext(ctx, query, id, productID).StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -86,7 +94,7 @@ func (r *Repository) GetByIDAndProductID(ctx context.Context, id, productID int6
 }
 
 // ListByProductID retrieves all reviews for a specific product.
-func (r *Repository) ListByProductID(ctx context.Context, params models.ListReviewsParams) ([]models.Review, error) {
+func (r *Repository) ListByProductID(ctx context.Context, tx *sqlx.Tx, params models.ListReviewsParams) ([]models.Review, error) {
 	query := `
 		SELECT id, product_id, author, rating, comment, created_at, updated_at
 		FROM reviews
@@ -96,7 +104,7 @@ func (r *Repository) ListByProductID(ctx context.Context, params models.ListRevi
 	`
 
 	var reviews []models.Review
-	err := r.db.SelectContext(ctx, &reviews, query, params.ProductID, params.Limit, params.Offset)
+	err := tx.SelectContext(ctx, &reviews, query, params.ProductID, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list reviews: %w", err)
 	}
@@ -105,7 +113,7 @@ func (r *Repository) ListByProductID(ctx context.Context, params models.ListRevi
 }
 
 // Update updates an existing review.
-func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateReviewParams) (*models.Review, error) {
+func (r *Repository) Update(ctx context.Context, tx *sqlx.Tx, id int64, params models.UpdateReviewParams) (*models.Review, error) {
 	query := `
 		UPDATE reviews
 		SET author = $1, rating = $2, comment = $3, updated_at = CURRENT_TIMESTAMP
@@ -114,7 +122,7 @@ func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateR
 	`
 
 	var review models.Review
-	err := r.db.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id).
+	err := tx.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id).
 		StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -127,7 +135,7 @@ func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateR
 }
 
 // UpdateByIDAndProductID updates a review by its ID and product ID.
-func (r *Repository) UpdateByIDAndProductID(ctx context.Context, id, productID int64, params models.UpdateReviewParams) (*models.Review, error) {
+func (r *Repository) UpdateByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64, params models.UpdateReviewParams) (*models.Review, error) {
 	query := `
 		UPDATE reviews
 		SET author = $1, rating = $2, comment = $3, updated_at = CURRENT_TIMESTAMP
@@ -136,7 +144,7 @@ func (r *Repository) UpdateByIDAndProductID(ctx context.Context, id, productID i
 	`
 
 	var review models.Review
-	err := r.db.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id, productID).
+	err := tx.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id, productID).
 		StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -149,10 +157,10 @@ func (r *Repository) UpdateByIDAndProductID(ctx context.Context, id, productID i
 }
 
 // Delete removes a review from the database.
-func (r *Repository) Delete(ctx context.Context, id int64) error {
+func (r *Repository) Delete(ctx context.Context, tx *sqlx.Tx, id int64) error {
 	query := `DELETE FROM reviews WHERE id = $1`
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete review: %w", err)
 	}
@@ -170,10 +178,10 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 }
 
 // DeleteByIDAndProductID removes a review by its ID and product ID.
-func (r *Repository) DeleteByIDAndProductID(ctx context.Context, id, productID int64) error {
+func (r *Repository) DeleteByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64) error {
 	query := `DELETE FROM reviews WHERE id = $1 AND product_id = $2`
 
-	result, err := r.db.ExecContext(ctx, query, id, productID)
+	result, err := tx.ExecContext(ctx, query, id, productID)
 	if err != nil {
 		return fmt.Errorf("failed to delete review: %w", err)
 	}
@@ -191,11 +199,11 @@ func (r *Repository) DeleteByIDAndProductID(ctx context.Context, id, productID i
 }
 
 // GetAverageRatingByProductID calculates the average rating for a product.
-func (r *Repository) GetAverageRatingByProductID(ctx context.Context, productID int64) (*float64, error) {
+func (r *Repository) GetAverageRatingByProductID(ctx context.Context, tx *sqlx.Tx, productID int64) (*float64, error) {
 	query := `SELECT AVG(rating)::FLOAT FROM reviews WHERE product_id = $1`
 
 	var avgRating *float64
-	err := r.db.QueryRowxContext(ctx, query, productID).Scan(&avgRating)
+	err := tx.QueryRowxContext(ctx, query, productID).Scan(&avgRating)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get average rating: %w", err)
 	}
@@ -204,11 +212,11 @@ func (r *Repository) GetAverageRatingByProductID(ctx context.Context, productID 
 }
 
 // HasReviewsByProductID checks if a product has any reviews.
-func (r *Repository) HasReviewsByProductID(ctx context.Context, productID int64) (bool, error) {
+func (r *Repository) HasReviewsByProductID(ctx context.Context, tx *sqlx.Tx, productID int64) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM reviews WHERE product_id = $1)`
 
 	var exists bool
-	err := r.db.QueryRowxContext(ctx, query, productID).Scan(&exists)
+	err := tx.QueryRowxContext(ctx, query, productID).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check reviews existence: %w", err)
 	}

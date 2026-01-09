@@ -41,8 +41,16 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 		return
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Check if product exists
-	exists, err := h.ProductRepo.Exists(r.Context(), prodID)
+	exists, err := h.ProductRepo.Exists(r.Context(), tx, prodID)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to check product existence")
 		return
@@ -61,9 +69,15 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 	}
 
 	// Create review
-	review, err := h.ReviewRepo.Create(r.Context(), params)
+	review, err := h.ReviewRepo.Create(r.Context(), tx, params)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to create review")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -80,8 +94,16 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 		return
 	}
 
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Check if product exists
-	exists, err := h.ProductRepo.Exists(r.Context(), prodID)
+	exists, err := h.ProductRepo.Exists(r.Context(), tx, prodID)
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to check product existence")
 		return
@@ -113,13 +135,19 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 	}
 
 	// Fetch reviews
-	reviewList, err := h.ReviewRepo.ListByProductID(r.Context(), models.ListReviewsParams{
+	reviewList, err := h.ReviewRepo.ListByProductID(r.Context(), tx, models.ListReviewsParams{
 		ProductID: prodID,
 		Limit:     limit,
 		Offset:    offset,
 	})
 	if err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to fetch reviews")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -167,14 +195,28 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 		Comment: req.Comment,
 	}
 
+	// Begin transaction
+	tx, err := h.ReviewRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Update review
-	review, err := h.ReviewRepo.UpdateByIDAndProductID(r.Context(), revID, prodID, params)
+	review, err := h.ReviewRepo.UpdateByIDAndProductID(r.Context(), tx, revID, prodID, params)
 	if err != nil {
 		if errors.Is(err, reviews.ErrNotFound) {
 			responseError(w, http.StatusNotFound, "Review not found")
 			return
 		}
 		responseError(w, http.StatusInternalServerError, "Failed to update review")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 
@@ -196,14 +238,28 @@ func (h *Handler) DeleteProductReview(w http.ResponseWriter, r *http.Request, pr
 		return
 	}
 
+	// Begin transaction
+	tx, err := h.ReviewRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
 	// Delete review
-	err = h.ReviewRepo.DeleteByIDAndProductID(r.Context(), revID, prodID)
+	err = h.ReviewRepo.DeleteByIDAndProductID(r.Context(), tx, revID, prodID)
 	if err != nil {
 		if errors.Is(err, reviews.ErrNotFound) {
 			responseError(w, http.StatusNotFound, "Review not found")
 			return
 		}
 		responseError(w, http.StatusInternalServerError, "Failed to delete review")
+		return
+	}
+
+	// Commit transaction
+	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
 

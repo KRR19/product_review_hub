@@ -27,8 +27,16 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
+func (r *Repository) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
+	return r.db.BeginTxx(ctx, nil)
+}
+
+func (r *Repository) CommitTx(ctx context.Context, tx *sqlx.Tx) error {
+	return tx.Commit()
+}
+
 // Create inserts a new product into the database.
-func (r *Repository) Create(ctx context.Context, params models.CreateProductParams) (*models.Product, error) {
+func (r *Repository) Create(ctx context.Context, tx *sqlx.Tx, params models.CreateProductParams) (*models.Product, error) {
 	query := `
 		INSERT INTO products (name, description, price)
 		VALUES ($1, $2, $3)
@@ -36,7 +44,7 @@ func (r *Repository) Create(ctx context.Context, params models.CreateProductPara
 	`
 
 	var product models.Product
-	err := r.db.QueryRowxContext(ctx, query, params.Name, params.Description, params.Price).
+	err := tx.QueryRowxContext(ctx, query, params.Name, params.Description, params.Price).
 		StructScan(&product)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create product: %w", err)
@@ -46,7 +54,7 @@ func (r *Repository) Create(ctx context.Context, params models.CreateProductPara
 }
 
 // GetByID retrieves a product by its ID with average rating.
-func (r *Repository) GetByID(ctx context.Context, id int64) (*models.ProductWithRating, error) {
+func (r *Repository) GetByID(ctx context.Context, tx *sqlx.Tx, id int64) (*models.ProductWithRating, error) {
 	//this query is not efficient because it joins the reviews table on every product but for this simple project it is fine
 	query := `
 		SELECT 
@@ -59,7 +67,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.ProductWith
 	`
 
 	var product models.ProductWithRating
-	err := r.db.QueryRowxContext(ctx, query, id).StructScan(&product)
+	err := tx.QueryRowxContext(ctx, query, id).StructScan(&product)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNotFound
@@ -71,7 +79,7 @@ func (r *Repository) GetByID(ctx context.Context, id int64) (*models.ProductWith
 }
 
 // List retrieves a list of products with pagination.
-func (r *Repository) List(ctx context.Context, params models.ListProductsParams) ([]models.ProductWithRating, error) {
+func (r *Repository) List(ctx context.Context, tx *sqlx.Tx, params models.ListProductsParams) ([]models.ProductWithRating, error) {
 	//this query is not efficient because it joins the reviews table on every product but for this simple project it is fine
 	query := `
 		SELECT 
@@ -85,7 +93,7 @@ func (r *Repository) List(ctx context.Context, params models.ListProductsParams)
 	`
 
 	var products []models.ProductWithRating
-	err := r.db.SelectContext(ctx, &products, query, params.Limit, params.Offset)
+	err := tx.SelectContext(ctx, &products, query, params.Limit, params.Offset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list products: %w", err)
 	}
@@ -94,7 +102,7 @@ func (r *Repository) List(ctx context.Context, params models.ListProductsParams)
 }
 
 // Update updates an existing product.
-func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateProductParams) (*models.Product, error) {
+func (r *Repository) Update(ctx context.Context, tx *sqlx.Tx, id int64, params models.UpdateProductParams) (*models.Product, error) {
 	query := `
 		UPDATE products
 		SET name = $1, description = $2, price = $3, updated_at = CURRENT_TIMESTAMP
@@ -103,7 +111,7 @@ func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateP
 	`
 
 	var product models.Product
-	err := r.db.QueryRowxContext(ctx, query, params.Name, params.Description, params.Price, id).
+	err := tx.QueryRowxContext(ctx, query, params.Name, params.Description, params.Price, id).
 		StructScan(&product)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -116,10 +124,10 @@ func (r *Repository) Update(ctx context.Context, id int64, params models.UpdateP
 }
 
 // Delete removes a product from the database.
-func (r *Repository) Delete(ctx context.Context, id int64) error {
+func (r *Repository) Delete(ctx context.Context, tx *sqlx.Tx, id int64) error {
 	query := `DELETE FROM products WHERE id = $1`
 
-	result, err := r.db.ExecContext(ctx, query, id)
+	result, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		return fmt.Errorf("failed to delete product: %w", err)
 	}
@@ -137,11 +145,11 @@ func (r *Repository) Delete(ctx context.Context, id int64) error {
 }
 
 // Exists checks if a product with the given ID exists.
-func (r *Repository) Exists(ctx context.Context, id int64) (bool, error) {
+func (r *Repository) Exists(ctx context.Context, tx *sqlx.Tx, id int64) (bool, error) {
 	query := `SELECT EXISTS(SELECT 1 FROM products WHERE id = $1)`
 
 	var exists bool
-	err := r.db.QueryRowxContext(ctx, query, id).Scan(&exists)
+	err := tx.QueryRowxContext(ctx, query, id).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check product existence: %w", err)
 	}
