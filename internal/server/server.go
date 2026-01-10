@@ -61,7 +61,6 @@ func New(cfg *config.Config) *Server {
 
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(idempotencymw.Idempotency(idempotencyStore, idempotencyTTL))
 
