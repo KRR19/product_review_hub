@@ -15,7 +15,7 @@ var _ api.ServerInterface = (*Handler)(nil)
 // ProductRepository defines interface for product operations.
 type ProductRepository interface {
 	BeginTx(ctx context.Context) (*sqlx.Tx, error)
-	CommitTx(ctx context.Context, tx *sqlx.Tx) error
+	CommitTx(tx *sqlx.Tx) error
 
 	Create(ctx context.Context, tx *sqlx.Tx, params models.CreateProductParams) (*models.Product, error)
 	GetByID(ctx context.Context, tx *sqlx.Tx, id int64) (*models.ProductWithRating, error)
@@ -28,7 +28,7 @@ type ProductRepository interface {
 // ReviewRepository defines interface for review operations.
 type ReviewRepository interface {
 	BeginTx(ctx context.Context) (*sqlx.Tx, error)
-	CommitTx(ctx context.Context, tx *sqlx.Tx) error
+	CommitTx(tx *sqlx.Tx) error
 
 	Create(ctx context.Context, tx *sqlx.Tx, params models.CreateReviewParams) (*models.Review, error)
 	GetByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64) (*models.Review, error)

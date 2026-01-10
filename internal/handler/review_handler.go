@@ -66,8 +66,8 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 	params := models.CreateReviewParams{
 		ProductID: prodID,
 		Rating:    req.Rating,
-		FirstName: getStringPtrValue(req.FirstName),
-		LastName:  getStringPtrValue(req.LastName),
+		FirstName: getStringValue(req.FirstName),
+		LastName:  getStringValue(req.LastName),
 		Comment:   req.Comment,
 	}
 
@@ -79,7 +79,7 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -184,7 +184,7 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -236,8 +236,8 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 	// Prepare update params
 	params := models.UpdateReviewParams{
 		Rating:    req.Rating,
-		FirstName: getStringPtrValue(req.FirstName),
-		LastName:  getStringPtrValue(req.LastName),
+		FirstName: getStringValue(req.FirstName),
+		LastName:  getStringValue(req.LastName),
 		Comment:   req.Comment,
 	}
 
@@ -261,7 +261,7 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 	}
 
 	// Commit transaction
-	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ReviewRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -322,7 +322,7 @@ func (h *Handler) DeleteProductReview(w http.ResponseWriter, r *http.Request, pr
 	}
 
 	// Commit transaction
-	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ReviewRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -371,12 +371,4 @@ func reviewToResponse(review *models.Review) api.Review {
 		LastName:  &review.LastName,
 		Comment:   review.Comment,
 	}
-}
-
-// getStringPtrValue returns the string value from a pointer or empty string if nil.
-func getStringPtrValue(s *string) string {
-	if s == nil {
-		return ""
-	}
-	return *s
 }

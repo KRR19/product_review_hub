@@ -31,7 +31,7 @@ func (r *Repository) BeginTx(ctx context.Context) (*sqlx.Tx, error) {
 	return r.db.BeginTxx(ctx, nil)
 }
 
-func (r *Repository) CommitTx(ctx context.Context, tx *sqlx.Tx) error {
+func (r *Repository) CommitTx(tx *sqlx.Tx) error {
 	return tx.Commit()
 }
 

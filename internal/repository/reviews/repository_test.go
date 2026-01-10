@@ -43,7 +43,7 @@ func TestRepository_Create(t *testing.T) {
 		require.NotNil(t, review.Comment)
 		assert.Equal(t, comment, *review.Comment)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("create review without comment", func(t *testing.T) {
@@ -65,7 +65,7 @@ func TestRepository_Create(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, review.Comment)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("create review with various ratings", func(t *testing.T) {
@@ -88,7 +88,7 @@ func TestRepository_Create(t *testing.T) {
 			assert.Equal(t, rating, review.Rating)
 		}
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 }
 
@@ -116,7 +116,7 @@ func TestRepository_GetByID(t *testing.T) {
 		assert.Equal(t, "John", review.FirstName)
 		assert.Equal(t, "Doe", review.LastName)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("get non-existing review", func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestRepository_GetByIDAndProductID(t *testing.T) {
 		require.NoError(t, err)
 		assert.Equal(t, reviewID, review.ID)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("get review with non-matching product", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestRepository_ListByProductID(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, reviewsList)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("list reviews with pagination", func(t *testing.T) {
@@ -228,7 +228,7 @@ func TestRepository_ListByProductID(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, reviewsList, 2)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("list reviews only for specific product", func(t *testing.T) {
@@ -257,7 +257,7 @@ func TestRepository_ListByProductID(t *testing.T) {
 			assert.Equal(t, productID1, r.ProductID)
 		}
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 }
 
@@ -291,7 +291,7 @@ func TestRepository_Update(t *testing.T) {
 		require.NotNil(t, updated.Comment)
 		assert.Equal(t, newComment, *updated.Comment)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("update non-existing review", func(t *testing.T) {
@@ -335,7 +335,7 @@ func TestRepository_UpdateByIDAndProductID(t *testing.T) {
 		assert.Equal(t, "New", updated.FirstName)
 		assert.Equal(t, "Author", updated.LastName)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("update with non-matching product", func(t *testing.T) {
@@ -377,7 +377,7 @@ func TestRepository_Delete(t *testing.T) {
 		err = repo.Delete(ctx, tx, reviewID)
 		require.NoError(t, err)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 
 		// Verify review is deleted
 		tx2, err := repo.BeginTx(ctx)
@@ -419,7 +419,7 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 		err = repo.DeleteByIDAndProductID(ctx, tx, reviewID, productID)
 		require.NoError(t, err)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 
 		// Verify review is deleted
 		tx2, err := repo.BeginTx(ctx)
@@ -445,7 +445,7 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, reviews.ErrNotFound)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 
 		// Verify review still exists
 		tx2, err := repo.BeginTx(ctx)
@@ -479,7 +479,7 @@ func TestRepository_GetAverageRatingByProductID(t *testing.T) {
 		require.NotNil(t, avgRating)
 		assert.Equal(t, 4.0, *avgRating)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("average rating without reviews", func(t *testing.T) {
@@ -495,6 +495,6 @@ func TestRepository_GetAverageRatingByProductID(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, avgRating)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 }

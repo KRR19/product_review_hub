@@ -92,14 +92,14 @@ func TestUpdateProduct(t *testing.T) {
 
 			// Update with unicode
 			updateReq := fixtures.ValidUpdateRequestWithData(
-				"Продукт 产品 🎉",
-				"Описание продукта с эмодзи 😀",
+				"Product 产品 🎉",
+				"Product description with emoji 😀",
 				199.99,
 			)
 			resp := client.Put(productsEndpoint+"/"+createdProduct.Id, updateReq)
 
 			updatedProduct := assertions.AssertProductUpdated(resp, updateReq, createdProduct.Id)
-			assert.Equal(t, "Продукт 产品 🎉", updatedProduct.Name)
+			assert.Equal(t, "Product 产品 🎉", updatedProduct.Name)
 		})
 
 		t.Run("should update product with special characters", func(t *testing.T) {

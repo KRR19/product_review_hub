@@ -75,7 +75,7 @@ func TestRepository_Create(t *testing.T) {
 			assert.False(t, product.CreatedAt.IsZero())
 			assert.False(t, product.UpdatedAt.IsZero())
 
-			require.NoError(t, repo.CommitTx(ctx, tx))
+			require.NoError(t, repo.CommitTx(tx))
 		})
 	}
 }
@@ -102,7 +102,7 @@ func TestRepository_GetByID(t *testing.T) {
 		assert.Equal(t, "Test Product", product.Name)
 		assert.Nil(t, product.AverageRating)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("get product with reviews", func(t *testing.T) {
@@ -123,7 +123,7 @@ func TestRepository_GetByID(t *testing.T) {
 		require.NotNil(t, product.AverageRating)
 		assert.Equal(t, 4.0, *product.AverageRating)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("get non-existing product", func(t *testing.T) {
@@ -155,7 +155,7 @@ func TestRepository_List(t *testing.T) {
 		require.NoError(t, err)
 		assert.Empty(t, productsList)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("list products with pagination", func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestRepository_List(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, productsList, 1)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("list products with average rating", func(t *testing.T) {
@@ -206,7 +206,7 @@ func TestRepository_List(t *testing.T) {
 		require.NotNil(t, productsList[0].AverageRating)
 		assert.Equal(t, 4.0, *productsList[0].AverageRating)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 }
 
@@ -237,7 +237,7 @@ func TestRepository_Update(t *testing.T) {
 		assert.Equal(t, newDesc, *updated.Description)
 		assert.Equal(t, 75.00, updated.Price)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("update non-existing product", func(t *testing.T) {
@@ -273,7 +273,7 @@ func TestRepository_Delete(t *testing.T) {
 		err = repo.Delete(ctx, tx, productID)
 		require.NoError(t, err)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 
 		// Verify product is deleted
 		tx2, err := repo.BeginTx(ctx)
@@ -309,7 +309,7 @@ func TestRepository_Delete(t *testing.T) {
 		err = repo.Delete(ctx, tx, productID)
 		require.NoError(t, err)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 
 		// Verify reviews are also deleted
 		var count int
@@ -337,7 +337,7 @@ func TestRepository_Exists(t *testing.T) {
 		require.NoError(t, err)
 		assert.True(t, exists)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 
 	t.Run("non-existing product", func(t *testing.T) {
@@ -351,6 +351,6 @@ func TestRepository_Exists(t *testing.T) {
 		require.NoError(t, err)
 		assert.False(t, exists)
 
-		require.NoError(t, repo.CommitTx(ctx, tx))
+		require.NoError(t, repo.CommitTx(tx))
 	})
 }

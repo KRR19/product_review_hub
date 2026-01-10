@@ -3,7 +3,6 @@ package testutil
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"product_review_hub/internal/database"
 	"testing"
@@ -128,36 +127,4 @@ func getEnvOrDefault(key, defaultValue string) string {
 // StringPtr returns a pointer to the given string.
 func StringPtr(s string) *string {
 	return &s
-}
-
-// Float64Ptr returns a pointer to the given float64.
-func Float64Ptr(f float64) *float64 {
-	return &f
-}
-
-// IntPtr returns a pointer to the given int.
-func IntPtr(i int) *int {
-	return &i
-}
-
-// RequireIntegrationTest skips the test if not running integration tests.
-func RequireIntegrationTest(t *testing.T) {
-	t.Helper()
-
-	if os.Getenv("INTEGRATION_TEST") != "true" {
-		t.Skip("Skipping integration test. Set INTEGRATION_TEST=true to run.")
-	}
-}
-
-// TestDSN returns the DSN for the test database.
-func TestDSN() string {
-	return fmt.Sprintf(
-		"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		getEnvOrDefault("TEST_DB_HOST", "localhost"),
-		getEnvOrDefault("TEST_DB_PORT", "5433"),
-		getEnvOrDefault("TEST_DB_USER", "postgres"),
-		getEnvOrDefault("TEST_DB_PASSWORD", "postgres"),
-		getEnvOrDefault("TEST_DB_NAME", "product_review_hub_test"),
-		getEnvOrDefault("TEST_DB_SSLMODE", "disable"),
-	)
 }

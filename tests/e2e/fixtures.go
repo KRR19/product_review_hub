@@ -91,8 +91,8 @@ func (f *ProductFixtures) CreateRequestWithSpecialChars() api.ProductCreate {
 // CreateRequestWithUnicode returns a ProductCreate request with unicode characters.
 func (f *ProductFixtures) CreateRequestWithUnicode() api.ProductCreate {
 	return api.ProductCreate{
-		Name:        "Продукт 产品 🎉",
-		Description: "Описание продукта с эмодзи 😀",
+		Name:        "Product 产品 🎉",
+		Description: "Product description with emoji 😀",
 		Price:       199.99,
 	}
 }
@@ -270,9 +270,9 @@ func (f *ReviewFixtures) UpdateRequestWithRatingAboveMax() api.ReviewUpdate {
 
 // CreateRequestWithUnicode returns a ReviewCreate request with unicode characters.
 func (f *ReviewFixtures) CreateRequestWithUnicode() api.ReviewCreate {
-	firstName := "Иван"
-	lastName := "Петров"
-	comment := "Отличный продукт! 五星好评 🌟"
+	firstName := "Ivan"
+	lastName := "Petrov"
+	comment := "Great product! 五星好评 🌟"
 	return api.ReviewCreate{
 		Rating:    5,
 		FirstName: &firstName,

@@ -54,7 +54,7 @@ func (h *Handler) CreateProduct(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -123,7 +123,7 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request, params api
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -199,7 +199,7 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request, product
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -272,7 +272,7 @@ func (h *Handler) UpdateProduct(w http.ResponseWriter, r *http.Request, productI
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
@@ -341,7 +341,7 @@ func (h *Handler) DeleteProduct(w http.ResponseWriter, r *http.Request, productI
 	}
 
 	// Commit transaction
-	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
+	if err := h.ProductRepo.CommitTx(tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
 	}
