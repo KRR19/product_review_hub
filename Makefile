@@ -7,6 +7,13 @@ generate:
 
 build:
 	go build -o bin/api ./cmd/api
+	go build -o bin/review-watcher ./cmd/review-watcher
+
+build-api:
+	go build -o bin/api ./cmd/api
+
+build-review-watcher:
+	go build -o bin/review-watcher ./cmd/review-watcher
 
 run:
 	docker-compose up --build

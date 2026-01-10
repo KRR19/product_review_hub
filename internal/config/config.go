@@ -15,11 +15,20 @@ type RedisConfig struct {
 	DB       int
 }
 
+// RabbitMQConfig holds RabbitMQ connection configuration.
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+}
+
 // Config holds all application configuration.
 type Config struct {
 	ServerAddress string
 	Database      database.Config
 	Redis         RedisConfig
+	RabbitMQ      RabbitMQConfig
 }
 
 func New() *Config {
@@ -41,6 +50,12 @@ func New() *Config {
 			Port:     getEnv("REDIS_PORT", "6379"),
 			Password: getEnv("REDIS_PASSWORD", ""),
 			DB:       getEnvAsInt("REDIS_DB", 0),
+		},
+		RabbitMQ: RabbitMQConfig{
+			Host:     getEnv("RABBITMQ_HOST", "localhost"),
+			Port:     getEnv("RABBITMQ_PORT", "5672"),
+			User:     getEnv("RABBITMQ_USER", "guest"),
+			Password: getEnv("RABBITMQ_PASSWORD", "guest"),
 		},
 	}
 }

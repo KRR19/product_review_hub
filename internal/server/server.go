@@ -11,6 +11,7 @@ import (
 	"product_review_hub/internal/database"
 	"product_review_hub/internal/handler"
 	idempotencymw "product_review_hub/internal/middleware"
+	"product_review_hub/internal/rabbitmq"
 	"product_review_hub/internal/redis"
 	"product_review_hub/internal/repository/idempotency"
 	"product_review_hub/internal/repository/products"
@@ -23,6 +24,7 @@ import (
 type Server struct {
 	httpServer *http.Server
 	config     *config.Config
+	rabbitConn *rabbitmq.Connection
 }
 
 const idempotencyTTL = time.Minute
@@ -43,6 +45,20 @@ func New(cfg *config.Config) *Server {
 	// Initialize idempotency store
 	idempotencyStore := idempotency.NewRedisStore(redisClient)
 
+	// Initialize RabbitMQ
+	rabbitConn, err := rabbitmq.NewConnection(rabbitmq.Config{
+		Host:     cfg.RabbitMQ.Host,
+		Port:     cfg.RabbitMQ.Port,
+		User:     cfg.RabbitMQ.User,
+		Password: cfg.RabbitMQ.Password,
+	})
+	if err != nil {
+		log.Fatalf("Failed to initialize RabbitMQ: %v", err)
+	}
+
+	// Initialize publisher
+	publisher := rabbitmq.NewPublisher(rabbitConn)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -53,7 +69,7 @@ func New(cfg *config.Config) *Server {
 	productRepo := products.NewRepository(db)
 	reviewRepo := reviews.NewRepository(db)
 
-	h := handler.New(db, productRepo, reviewRepo)
+	h := handler.New(db, productRepo, reviewRepo, publisher)
 
 	api.HandlerFromMux(h, r)
 
@@ -65,7 +81,8 @@ func New(cfg *config.Config) *Server {
 			WriteTimeout: 15 * time.Second,
 			IdleTimeout:  60 * time.Second,
 		},
-		config: cfg,
+		config:     cfg,
+		rabbitConn: rabbitConn,
 	}
 }
 
@@ -74,5 +91,10 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	if s.rabbitConn != nil {
+		if err := s.rabbitConn.Close(); err != nil {
+			log.Printf("Error closing RabbitMQ connection: %v", err)
+		}
+	}
 	return s.httpServer.Shutdown(ctx)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"product_review_hub/internal/api"
 	"product_review_hub/internal/models"
+	"product_review_hub/internal/rabbitmq"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -41,13 +42,15 @@ type Handler struct {
 	DB          *sqlx.DB
 	ProductRepo ProductRepository
 	ReviewRepo  ReviewRepository
+	Publisher   *rabbitmq.Publisher
 }
 
 // New creates a new Handler instance.
-func New(db *sqlx.DB, productRepo ProductRepository, reviewRepo ReviewRepository) *Handler {
+func New(db *sqlx.DB, productRepo ProductRepository, reviewRepo ReviewRepository, publisher *rabbitmq.Publisher) *Handler {
 	return &Handler{
 		DB:          db,
 		ProductRepo: productRepo,
 		ReviewRepo:  reviewRepo,
+		Publisher:   publisher,
 	}
 }

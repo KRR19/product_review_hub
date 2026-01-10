@@ -3,11 +3,13 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
 	"product_review_hub/internal/api"
 	"product_review_hub/internal/models"
+	"product_review_hub/internal/rabbitmq"
 	"product_review_hub/internal/repository/reviews"
 )
 
@@ -79,6 +81,19 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
+	}
+
+	// Publish review created event
+	if h.Publisher != nil {
+		event := rabbitmq.NewReviewEvent(
+			rabbitmq.EventReviewCreated,
+			strconv.FormatInt(review.ID, 10),
+			strconv.FormatInt(review.ProductID, 10),
+			review.Rating,
+		)
+		if err := h.Publisher.Publish(r.Context(), event); err != nil {
+			log.Printf("Failed to publish review created event: %v", err)
+		}
 	}
 
 	// Return created review
@@ -220,6 +235,19 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 		return
 	}
 
+	// Publish review updated event
+	if h.Publisher != nil {
+		event := rabbitmq.NewReviewEvent(
+			rabbitmq.EventReviewUpdated,
+			strconv.FormatInt(review.ID, 10),
+			strconv.FormatInt(review.ProductID, 10),
+			review.Rating,
+		)
+		if err := h.Publisher.Publish(r.Context(), event); err != nil {
+			log.Printf("Failed to publish review updated event: %v", err)
+		}
+	}
+
 	responseJSON(w, http.StatusOK, reviewToResponse(review))
 }
 
@@ -261,6 +289,19 @@ func (h *Handler) DeleteProductReview(w http.ResponseWriter, r *http.Request, pr
 	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
+	}
+
+	// Publish review deleted event
+	if h.Publisher != nil {
+		event := rabbitmq.NewReviewEvent(
+			rabbitmq.EventReviewDeleted,
+			reviewId,
+			productId,
+			0,
+		)
+		if err := h.Publisher.Publish(r.Context(), event); err != nil {
+			log.Printf("Failed to publish review deleted event: %v", err)
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)

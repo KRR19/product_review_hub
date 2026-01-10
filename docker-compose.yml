@@ -137,6 +137,26 @@ services:
       migrate:
         condition: service_completed_successfully
 
+  review-watcher:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: product_review_hub_review_watcher
+    command: ["./review-watcher"]
+    environment:
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_USER=guest
+      - RABBITMQ_PASSWORD=guest
+    restart: unless-stopped
+    networks:
+      - product_review_network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      api:
+        condition: service_started
+
 volumes:
   postgres_data:
   postgres_test_data:
