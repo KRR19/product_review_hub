@@ -112,7 +112,7 @@ func setupServer(t *testing.T, db *sqlx.DB) *httptest.Server {
 
 	productRepo := products.NewRepository(db)
 	reviewRepo := reviews.NewRepository(db)
-	h := handler.New(db, productRepo, reviewRepo, nil) // nil publisher for tests
+	h := handler.New(db, productRepo, reviewRepo, nil, nil) // nil publisher and cache for tests
 
 	api.HandlerFromMux(h, r)
 

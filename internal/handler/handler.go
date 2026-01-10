@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"product_review_hub/internal/api"
+	"product_review_hub/internal/cache"
 	"product_review_hub/internal/models"
 	"product_review_hub/internal/rabbitmq"
 
@@ -43,14 +44,16 @@ type Handler struct {
 	ProductRepo ProductRepository
 	ReviewRepo  ReviewRepository
 	Publisher   *rabbitmq.Publisher
+	Cache       *cache.Service
 }
 
 // New creates a new Handler instance.
-func New(db *sqlx.DB, productRepo ProductRepository, reviewRepo ReviewRepository, publisher *rabbitmq.Publisher) *Handler {
+func New(db *sqlx.DB, productRepo ProductRepository, reviewRepo ReviewRepository, publisher *rabbitmq.Publisher, cacheService *cache.Service) *Handler {
 	return &Handler{
 		DB:          db,
 		ProductRepo: productRepo,
 		ReviewRepo:  reviewRepo,
 		Publisher:   publisher,
+		Cache:       cacheService,
 	}
 }

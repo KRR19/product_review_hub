@@ -84,6 +84,11 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 		return
 	}
 
+	// Invalidate cache for product reviews and rating
+	if h.Cache != nil {
+		h.Cache.InvalidateProductCache(r.Context(), prodID)
+	}
+
 	// Publish review created event
 	if h.Publisher != nil {
 		event := rabbitmq.NewReviewEvent(
@@ -110,25 +115,6 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 		return
 	}
 
-	// Begin transaction
-	tx, err := h.ProductRepo.BeginTx(r.Context())
-	if err != nil {
-		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
-		return
-	}
-	defer tx.Rollback()
-
-	// Check if product exists
-	exists, err := h.ProductRepo.Exists(r.Context(), tx, prodID)
-	if err != nil {
-		responseError(w, http.StatusInternalServerError, "Failed to check product existence")
-		return
-	}
-	if !exists {
-		responseError(w, http.StatusNotFound, "Product not found")
-		return
-	}
-
 	// Apply pagination defaults
 	limit := defaultReviewLimit
 	offset := 0
@@ -150,6 +136,42 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 		}
 	}
 
+	// Try to get reviews from cache
+	if h.Cache != nil {
+		cachedReviews, err := h.Cache.GetReviews(r.Context(), prodID, limit, offset)
+		if err != nil {
+			log.Printf("Failed to get reviews from cache: %v", err)
+		} else if cachedReviews != nil {
+			// Cache hit - return cached reviews
+			response := make([]api.Review, len(cachedReviews))
+			for i, rev := range cachedReviews {
+				response[i] = reviewToResponse(&rev)
+			}
+			responseJSON(w, http.StatusOK, response)
+			return
+		}
+	}
+
+	// Cache miss - fetch from database
+	// Begin transaction
+	tx, err := h.ProductRepo.BeginTx(r.Context())
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to begin transaction")
+		return
+	}
+	defer tx.Rollback()
+
+	// Check if product exists
+	exists, err := h.ProductRepo.Exists(r.Context(), tx, prodID)
+	if err != nil {
+		responseError(w, http.StatusInternalServerError, "Failed to check product existence")
+		return
+	}
+	if !exists {
+		responseError(w, http.StatusNotFound, "Product not found")
+		return
+	}
+
 	// Fetch reviews
 	reviewList, err := h.ReviewRepo.ListByProductID(r.Context(), tx, models.ListReviewsParams{
 		ProductID: prodID,
@@ -165,6 +187,13 @@ func (h *Handler) GetProductReviews(w http.ResponseWriter, r *http.Request, prod
 	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
+	}
+
+	// Store in cache
+	if h.Cache != nil {
+		if err := h.Cache.SetReviews(r.Context(), prodID, limit, offset, reviewList); err != nil {
+			log.Printf("Failed to cache reviews: %v", err)
+		}
 	}
 
 	// Convert to API response
@@ -237,6 +266,11 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 		return
 	}
 
+	// Invalidate cache for product reviews and rating
+	if h.Cache != nil {
+		h.Cache.InvalidateProductCache(r.Context(), prodID)
+	}
+
 	// Publish review updated event
 	if h.Publisher != nil {
 		event := rabbitmq.NewReviewEvent(
@@ -291,6 +325,11 @@ func (h *Handler) DeleteProductReview(w http.ResponseWriter, r *http.Request, pr
 	if err := h.ReviewRepo.CommitTx(r.Context(), tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
+	}
+
+	// Invalidate cache for product reviews and rating
+	if h.Cache != nil {
+		h.Cache.InvalidateProductCache(r.Context(), prodID)
 	}
 
 	// Publish review deleted event

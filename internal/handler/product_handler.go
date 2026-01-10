@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -127,6 +128,28 @@ func (h *Handler) GetProducts(w http.ResponseWriter, r *http.Request, params api
 		return
 	}
 
+	// Cache ratings for products
+	if h.Cache != nil {
+		for i := range productList {
+			// Try to get rating from cache
+			cachedRating, ratingCached, cacheErr := h.Cache.GetRating(r.Context(), productList[i].ID)
+			if cacheErr != nil {
+				log.Printf("Failed to get rating from cache for product %d: %v", productList[i].ID, cacheErr)
+				continue
+			}
+
+			if ratingCached {
+				// Use cached rating
+				productList[i].AverageRating = cachedRating
+			} else {
+				// Cache the DB rating
+				if err := h.Cache.SetRating(r.Context(), productList[i].ID, productList[i].AverageRating); err != nil {
+					log.Printf("Failed to cache rating for product %d: %v", productList[i].ID, err)
+				}
+			}
+		}
+	}
+
 	// Convert to API response
 	response := make([]api.Product, len(productList))
 	for i := range productList {
@@ -143,6 +166,17 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request, product
 	if err != nil {
 		responseError(w, http.StatusBadRequest, "Invalid product ID")
 		return
+	}
+
+	// Try to get rating from cache
+	var cachedRating *float64
+	var ratingCached bool
+	if h.Cache != nil {
+		var cacheErr error
+		cachedRating, ratingCached, cacheErr = h.Cache.GetRating(r.Context(), id)
+		if cacheErr != nil {
+			log.Printf("Failed to get rating from cache: %v", cacheErr)
+		}
 	}
 
 	// Begin transaction
@@ -168,6 +202,15 @@ func (h *Handler) GetProductById(w http.ResponseWriter, r *http.Request, product
 	if err := h.ProductRepo.CommitTx(r.Context(), tx); err != nil {
 		responseError(w, http.StatusInternalServerError, "Failed to commit transaction")
 		return
+	}
+
+	// Use cached rating if available, otherwise cache the DB rating
+	if ratingCached {
+		product.AverageRating = cachedRating
+	} else if h.Cache != nil {
+		if err := h.Cache.SetRating(r.Context(), id, product.AverageRating); err != nil {
+			log.Printf("Failed to cache rating: %v", err)
+		}
 	}
 
 	responseJSON(w, http.StatusOK, productToResponse(product))

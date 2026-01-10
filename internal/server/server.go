@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"product_review_hub/internal/api"
+	"product_review_hub/internal/cache"
 	"product_review_hub/internal/config"
 	"product_review_hub/internal/database"
 	"product_review_hub/internal/handler"
@@ -45,6 +46,9 @@ func New(cfg *config.Config) *Server {
 	// Initialize idempotency store
 	idempotencyStore := idempotency.NewRedisStore(redisClient)
 
+	// Initialize cache service
+	cacheService := cache.NewService(redisClient)
+
 	// Initialize RabbitMQ
 	rabbitConn, err := rabbitmq.NewConnection(rabbitmq.Config{
 		Host:     cfg.RabbitMQ.Host,
@@ -68,7 +72,7 @@ func New(cfg *config.Config) *Server {
 	productRepo := products.NewRepository(db)
 	reviewRepo := reviews.NewRepository(db)
 
-	h := handler.New(db, productRepo, reviewRepo, publisher)
+	h := handler.New(db, productRepo, reviewRepo, publisher, cacheService)
 
 	api.HandlerFromMux(h, r)
 
