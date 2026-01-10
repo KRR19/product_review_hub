@@ -1,5 +1,10 @@
 .PHONY: generate build run clean deps run-fresh docker-build docker-up docker-down docker-logs lint lint-fix migrate-create migrate-up migrate-down migrate-status migrate-test-up migrate-test-down migrate-test-status test test-integration test-coverage test-with-docker
 
+# Local bin
+LOCAL_BIN := $(CURDIR)/bin
+GOLANGCI_LINT_VERSION := v1.63.4
+GOLANGCI_LINT := $(LOCAL_BIN)/golangci-lint
+
 generate:
 	cd api && oapi-codegen -config oapi-codegen.yaml openapi.yaml
 	
@@ -36,14 +41,18 @@ clean:
 deps:
 	go mod download
 	go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
-lint:
-	golangci-lint run ./...
+# Linter
+$(GOLANGCI_LINT):
+	mkdir -p $(LOCAL_BIN)
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(LOCAL_BIN) $(GOLANGCI_LINT_VERSION)
 
-lint-fix:
-	golangci-lint run --fix ./...
+lint: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run ./...
+
+lint-fix: $(GOLANGCI_LINT)
+	$(GOLANGCI_LINT) run --fix ./...
 
 migrate-create:
 	@read -p "Enter migration name: " name; \

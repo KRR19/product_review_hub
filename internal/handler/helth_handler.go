@@ -28,6 +28,7 @@ func (h *Handler) GetHealth(w http.ResponseWriter, r *http.Request) {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusServiceUnavailable)
+		//nolint:errcheck // Response write error cannot be handled meaningfully here
 		json.NewEncoder(w).Encode(response)
 		return
 	}

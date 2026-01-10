@@ -80,6 +80,7 @@ func writeCachedResponse(w http.ResponseWriter, cached *idempotency.CachedRespon
 		w.Header().Set(k, v)
 	}
 	w.WriteHeader(cached.StatusCode)
+	//nolint:errcheck // Response write error cannot be handled meaningfully here
 	w.Write(cached.Body)
 }
 
@@ -116,7 +117,8 @@ func Idempotency(store idempotency.Store, ttl time.Duration) func(http.Handler) 
 
 			// Cache successful responses (2xx status codes)
 			if rec.statusCode >= 200 && rec.statusCode < 300 {
-				_ = store.Set(r.Context(), key, rec.toCachedResponse(), ttl)
+				//nolint:errcheck // Best-effort caching, failure is non-critical
+				store.Set(r.Context(), key, rec.toCachedResponse(), ttl)
 			}
 		})
 	}

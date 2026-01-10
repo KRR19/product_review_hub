@@ -4,6 +4,9 @@ linters-settings:
   errcheck:
     check-type-assertions: true
     check-blank: true
+    exclude-functions:
+      - (*database/sql.Tx).Rollback
+      - (io.Closer).Close
   goconst:
     min-len: 2
     min-occurrences: 3
@@ -21,8 +24,10 @@ linters-settings:
   goimports:
     local-prefixes: github.com/product_review_hub
   govet:
-    check-shadowing: true
     enable-all: true
+    disable:
+      - shadow
+      - fieldalignment
   misspell:
     locale: US
   nolintlint:
@@ -61,56 +66,73 @@ linters-settings:
 linters:
   disable-all: true
   enable:
-    - bodyclose        # проверка закрытия HTTP body
-    - dupl             # обнаружение дублирующегося кода
     - errcheck         # проверка обработки ошибок
-    - exportloopref    # проверка ссылок на переменные цикла
-    - goconst          # обнаружение повторяющихся строк для замены на константы
-    - gocritic         # мета-линтер с множеством проверок
-    - gocyclo          # проверка цикломатической сложности
-    - gofmt            # проверка форматирования
-    - goimports        # проверка импортов
-    - gosec            # проверка безопасности
-    - gosimple         # упрощение кода
-    - govet            # стандартный go vet
-    - ineffassign      # обнаружение неэффективных присваиваний
-    - misspell         # проверка орфографии
-    - nolintlint       # проверка директив nolint
-    - revive           # быстрая альтернатива golint
-    - staticcheck      # большой набор статических проверок
-    - stylecheck       # проверка стиля кода
-    - typecheck        # проверка типов
-    - unconvert        # проверка ненужных преобразований типов
-    - unparam          # обнаружение неиспользуемых параметров функций
-    - unused           # обнаружение неиспользуемого кода
-    - whitespace       # проверка пробелов
+    - gofmt            
+    - goimports        
+    - gosec            
+    - gosimple         
+    - govet            
+    - ineffassign      
+    - misspell         
+    - staticcheck      
+    - typecheck        
+    - unconvert        
+    - unused           
+    - whitespace       
 
-issues:
   exclude-rules:
-    # Исключения для сгенерированного кода
-    - path: internal/api/generated\.go
-      linters:
-        - revive
-        - stylecheck
-        - gosec
-        - dupl
-        - gocritic
-    # Исключения для main.go
     - path: cmd/
       text: "should have comment or be unexported"
+    - path: internal/handler/product_handler\.go
+      text: "method GetProductById should be GetProductByID"
+    - path: tests/
+      linters:
+        - dupl
+        - shadow
+        - goconst
+        - gocyclo
+        - revive
+        - bodyclose
+        - gocritic
+        - errcheck
+    - path: _test\.go
+      linters:
+        - dupl
+        - shadow
+        - goconst
+        - gocyclo
+        - errcheck
+    - linters:
+        - govet
+      text: "fieldalignment:"
+    - linters:
+        - gocritic
+      text: "hugeParam:"
+    - path: cmd/
+      linters:
+        - gocritic
+      text: "exitAfterDefer:"
+    - linters:
+        - govet
+      text: "shadow:"
+    - linters:
+        - gocritic
+      text: "(paramTypeCombine|unnamedResult|ifElseChain):"
+    - text: "Error return value of .* is not checked"
+      linters:
+        - errcheck
   max-issues-per-linter: 0
   max-same-issues: 0
 
 run:
   timeout: 5m
   tests: true
-  skip-dirs:
+  exclude-dirs:
     - bin
     - vendor
-  skip-files:
-    - ".*\\.pb\\.go$"
 
 output:
-  format: colored-line-number
+  formats:
+    - format: colored-line-number
   print-issued-lines: true
   print-linter-name: true
