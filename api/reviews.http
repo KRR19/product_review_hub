@@ -1,0 +1,30 @@
+### Product Review Hub API - Reviews
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@productId = 2
+@reviewId = rev-456
+
+GET {{baseUrl}}/api/v1/products/{{productId}}/reviews
+
+POST {{baseUrl}}/api/v1/products/{{productId}}/reviews
+Content-Type: {{contentType}}
+
+{
+    "rating": 5,
+    "comment": "Great product! Highly recommended.",
+    "author": "John Doe"
+}
+
+PUT {{baseUrl}}/api/v1/products/{{productId}}/reviews/{{reviewId}}
+Content-Type: {{contentType}}
+
+{
+    "rating": 4,
+    "comment": "Good product, but could be better.",
+    "author": "John Doe"
+}
+
+DELETE {{baseUrl}}/api/v1/products/{{productId}}/reviews/{{reviewId}}

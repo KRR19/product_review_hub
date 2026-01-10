@@ -1,0 +1,31 @@
+### Product Review Hub API - Products
+### Base URL
+@baseUrl = http://localhost:8080
+@contentType = application/json
+
+### Variables
+@productId = 1
+
+POST {{baseUrl}}/api/v1/products
+Content-Type: {{contentType}}
+
+{
+    "name": "Wireless Headphones",
+    "description": "High-quality wireless headphones with noise cancellation",
+    "price": 99.99
+}
+
+GET {{baseUrl}}/api/v1/products?limit=10&offset=0
+
+GET {{baseUrl}}/api/v1/products/{{productId}}
+
+PUT {{baseUrl}}/api/v1/products/{{productId}}
+Content-Type: {{contentType}}
+
+{
+    "name": "Wireless Headphones Pro",
+    "description": "Premium wireless headphones with active noise cancellation",
+    "price": 129.99
+}
+
+DELETE {{baseUrl}}/api/v1/products/{{productId}}
