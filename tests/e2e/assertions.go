@@ -204,9 +204,14 @@ func (a *ReviewAssertions) AssertReviewCreated(resp *http.Response, expected api
 	assert.Equal(a.t, productID, review.ProductId, "Product ID mismatch")
 	assert.Equal(a.t, expected.Rating, review.Rating, "Rating mismatch")
 
-	if expected.Author != nil {
-		require.NotNil(a.t, review.Author, "Author should not be nil")
-		assert.Equal(a.t, *expected.Author, *review.Author, "Author mismatch")
+	if expected.FirstName != nil {
+		require.NotNil(a.t, review.FirstName, "FirstName should not be nil")
+		assert.Equal(a.t, *expected.FirstName, *review.FirstName, "FirstName mismatch")
+	}
+
+	if expected.LastName != nil {
+		require.NotNil(a.t, review.LastName, "LastName should not be nil")
+		assert.Equal(a.t, *expected.LastName, *review.LastName, "LastName mismatch")
 	}
 
 	if expected.Comment != nil {
@@ -229,9 +234,14 @@ func (a *ReviewAssertions) AssertReviewUpdated(resp *http.Response, expected api
 	assert.Equal(a.t, productID, review.ProductId, "Product ID mismatch")
 	assert.Equal(a.t, expected.Rating, review.Rating, "Rating mismatch")
 
-	if expected.Author != nil {
-		require.NotNil(a.t, review.Author, "Author should not be nil")
-		assert.Equal(a.t, *expected.Author, *review.Author, "Author mismatch")
+	if expected.FirstName != nil {
+		require.NotNil(a.t, review.FirstName, "FirstName should not be nil")
+		assert.Equal(a.t, *expected.FirstName, *review.FirstName, "FirstName mismatch")
+	}
+
+	if expected.LastName != nil {
+		require.NotNil(a.t, review.LastName, "LastName should not be nil")
+		assert.Equal(a.t, *expected.LastName, *review.LastName, "LastName mismatch")
 	}
 
 	if expected.Comment != nil {

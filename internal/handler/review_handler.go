@@ -66,7 +66,8 @@ func (h *Handler) CreateProductReview(w http.ResponseWriter, r *http.Request, pr
 	params := models.CreateReviewParams{
 		ProductID: prodID,
 		Rating:    req.Rating,
-		Author:    getStringPtrValue(req.Author),
+		FirstName: getStringPtrValue(req.FirstName),
+		LastName:  getStringPtrValue(req.LastName),
 		Comment:   req.Comment,
 	}
 
@@ -205,9 +206,10 @@ func (h *Handler) UpdateProductReview(w http.ResponseWriter, r *http.Request, pr
 
 	// Prepare update params
 	params := models.UpdateReviewParams{
-		Rating:  req.Rating,
-		Author:  getStringPtrValue(req.Author),
-		Comment: req.Comment,
+		Rating:    req.Rating,
+		FirstName: getStringPtrValue(req.FirstName),
+		LastName:  getStringPtrValue(req.LastName),
+		Comment:   req.Comment,
 	}
 
 	// Begin transaction
@@ -326,7 +328,8 @@ func reviewToResponse(review *models.Review) api.Review {
 		Id:        strconv.FormatInt(review.ID, 10),
 		ProductId: strconv.FormatInt(review.ProductID, 10),
 		Rating:    review.Rating,
-		Author:    &review.Author,
+		FirstName: &review.FirstName,
+		LastName:  &review.LastName,
 		Comment:   review.Comment,
 	}
 }

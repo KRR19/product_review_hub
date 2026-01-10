@@ -76,14 +76,17 @@ type ProductUpdate struct {
 
 // Review defines model for Review.
 type Review struct {
-	// Author Name of the review author
-	Author *string `json:"author"`
-
 	// Comment Optional text comment for the review
 	Comment *string `json:"comment"`
 
+	// FirstName First name of the review author
+	FirstName *string `json:"first_name"`
+
 	// Id Unique identifier for the review
 	Id string `json:"id"`
+
+	// LastName Last name of the review author
+	LastName *string `json:"last_name"`
 
 	// ProductId ID of the product being reviewed
 	ProductId string `json:"product_id"`
@@ -94,11 +97,14 @@ type Review struct {
 
 // ReviewCreate defines model for ReviewCreate.
 type ReviewCreate struct {
-	// Author Name of the review author
-	Author *string `json:"author,omitempty"`
-
 	// Comment Optional text comment for the review
 	Comment *string `json:"comment,omitempty"`
+
+	// FirstName First name of the review author
+	FirstName *string `json:"first_name,omitempty"`
+
+	// LastName Last name of the review author
+	LastName *string `json:"last_name,omitempty"`
 
 	// Rating Rating given to the product (1-5 stars)
 	Rating int `json:"rating"`
@@ -106,11 +112,14 @@ type ReviewCreate struct {
 
 // ReviewUpdate defines model for ReviewUpdate.
 type ReviewUpdate struct {
-	// Author Name of the review author
-	Author *string `json:"author,omitempty"`
-
 	// Comment Optional text comment for the review
 	Comment *string `json:"comment,omitempty"`
+
+	// FirstName First name of the review author
+	FirstName *string `json:"first_name,omitempty"`
+
+	// LastName Last name of the review author
+	LastName *string `json:"last_name,omitempty"`
 
 	// Rating Rating given to the product (1-5 stars)
 	Rating int `json:"rating"`

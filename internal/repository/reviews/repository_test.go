@@ -28,7 +28,8 @@ func TestRepository_Create(t *testing.T) {
 		comment := "Great product!"
 		review, err := repo.Create(ctx, tx, models.CreateReviewParams{
 			ProductID: productID,
-			Author:    "John Doe",
+			FirstName: "John",
+			LastName:  "Doe",
 			Rating:    5,
 			Comment:   &comment,
 		})
@@ -36,7 +37,8 @@ func TestRepository_Create(t *testing.T) {
 
 		assert.NotZero(t, review.ID)
 		assert.Equal(t, productID, review.ProductID)
-		assert.Equal(t, "John Doe", review.Author)
+		assert.Equal(t, "John", review.FirstName)
+		assert.Equal(t, "Doe", review.LastName)
 		assert.Equal(t, 5, review.Rating)
 		require.NotNil(t, review.Comment)
 		assert.Equal(t, comment, *review.Comment)
@@ -55,7 +57,8 @@ func TestRepository_Create(t *testing.T) {
 
 		review, err := repo.Create(ctx, tx, models.CreateReviewParams{
 			ProductID: productID,
-			Author:    "Jane Doe",
+			FirstName: "Jane",
+			LastName:  "Doe",
 			Rating:    4,
 			Comment:   nil,
 		})
@@ -77,7 +80,8 @@ func TestRepository_Create(t *testing.T) {
 		for rating := 1; rating <= 5; rating++ {
 			review, err := repo.Create(ctx, tx, models.CreateReviewParams{
 				ProductID: productID,
-				Author:    "User",
+				FirstName: "User",
+				LastName:  "Test",
 				Rating:    rating,
 			})
 			require.NoError(t, err, "rating %d", rating)
@@ -98,7 +102,7 @@ func TestRepository_GetByID(t *testing.T) {
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
 		comment := "Test comment"
-		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, &comment)
+		reviewID := tdb.CreateTestReview(t, productID, "John", "Doe", 5, &comment)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -109,7 +113,8 @@ func TestRepository_GetByID(t *testing.T) {
 
 		assert.Equal(t, reviewID, review.ID)
 		assert.Equal(t, productID, review.ProductID)
-		assert.Equal(t, "Author", review.Author)
+		assert.Equal(t, "John", review.FirstName)
+		assert.Equal(t, "Doe", review.LastName)
 
 		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
@@ -136,7 +141,7 @@ func TestRepository_GetByIDAndProductID(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -154,7 +159,7 @@ func TestRepository_GetByIDAndProductID(t *testing.T) {
 
 		productID1 := tdb.CreateTestProduct(t, "Product 1", nil, 99.99)
 		productID2 := tdb.CreateTestProduct(t, "Product 2", nil, 49.99)
-		reviewID := tdb.CreateTestReview(t, productID1, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID1, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -198,7 +203,7 @@ func TestRepository_ListByProductID(t *testing.T) {
 
 		// Create 5 reviews
 		for i := 0; i < 5; i++ {
-			tdb.CreateTestReview(t, productID, "User", i%5+1, nil)
+			tdb.CreateTestReview(t, productID, "User", "Test", i%5+1, nil)
 		}
 
 		tx, err := repo.BeginTx(ctx)
@@ -232,9 +237,9 @@ func TestRepository_ListByProductID(t *testing.T) {
 		productID1 := tdb.CreateTestProduct(t, "Product 1", nil, 99.99)
 		productID2 := tdb.CreateTestProduct(t, "Product 2", nil, 49.99)
 
-		tdb.CreateTestReview(t, productID1, "User1", 5, nil)
-		tdb.CreateTestReview(t, productID1, "User2", 4, nil)
-		tdb.CreateTestReview(t, productID2, "User3", 3, nil)
+		tdb.CreateTestReview(t, productID1, "User1", "First", 5, nil)
+		tdb.CreateTestReview(t, productID1, "User2", "Second", 4, nil)
+		tdb.CreateTestReview(t, productID2, "User3", "Third", 3, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -265,7 +270,7 @@ func TestRepository_Update(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		reviewID := tdb.CreateTestReview(t, productID, "Original Author", 3, nil)
+		reviewID := tdb.CreateTestReview(t, productID, "Original", "Author", 3, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -273,13 +278,15 @@ func TestRepository_Update(t *testing.T) {
 
 		newComment := "Updated comment"
 		updated, err := repo.Update(ctx, tx, reviewID, models.UpdateReviewParams{
-			Author:  "Updated Author",
-			Rating:  5,
-			Comment: &newComment,
+			FirstName: "Updated",
+			LastName:  "Author",
+			Rating:    5,
+			Comment:   &newComment,
 		})
 		require.NoError(t, err)
 
-		assert.Equal(t, "Updated Author", updated.Author)
+		assert.Equal(t, "Updated", updated.FirstName)
+		assert.Equal(t, "Author", updated.LastName)
 		assert.Equal(t, 5, updated.Rating)
 		require.NotNil(t, updated.Comment)
 		assert.Equal(t, newComment, *updated.Comment)
@@ -295,8 +302,9 @@ func TestRepository_Update(t *testing.T) {
 		defer tx.Rollback()
 
 		_, err = repo.Update(ctx, tx, 999999, models.UpdateReviewParams{
-			Author: "Author",
-			Rating: 5,
+			FirstName: "John",
+			LastName:  "Doe",
+			Rating:    5,
 		})
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, reviews.ErrNotFound)
@@ -312,18 +320,20 @@ func TestRepository_UpdateByIDAndProductID(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		reviewID := tdb.CreateTestReview(t, productID, "Author", 3, nil)
+		reviewID := tdb.CreateTestReview(t, productID, "John", "Doe", 3, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
 		defer tx.Rollback()
 
 		updated, err := repo.UpdateByIDAndProductID(ctx, tx, reviewID, productID, models.UpdateReviewParams{
-			Author: "New Author",
-			Rating: 5,
+			FirstName: "New",
+			LastName:  "Author",
+			Rating:    5,
 		})
 		require.NoError(t, err)
-		assert.Equal(t, "New Author", updated.Author)
+		assert.Equal(t, "New", updated.FirstName)
+		assert.Equal(t, "Author", updated.LastName)
 
 		require.NoError(t, repo.CommitTx(ctx, tx))
 	})
@@ -333,15 +343,16 @@ func TestRepository_UpdateByIDAndProductID(t *testing.T) {
 
 		productID1 := tdb.CreateTestProduct(t, "Product 1", nil, 99.99)
 		productID2 := tdb.CreateTestProduct(t, "Product 2", nil, 49.99)
-		reviewID := tdb.CreateTestReview(t, productID1, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID1, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
 		defer tx.Rollback()
 
 		_, err = repo.UpdateByIDAndProductID(ctx, tx, reviewID, productID2, models.UpdateReviewParams{
-			Author: "Author",
-			Rating: 5,
+			FirstName: "John",
+			LastName:  "Doe",
+			Rating:    5,
 		})
 		assert.Error(t, err)
 		assert.ErrorIs(t, err, reviews.ErrNotFound)
@@ -357,7 +368,7 @@ func TestRepository_Delete(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -399,7 +410,7 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		reviewID := tdb.CreateTestReview(t, productID, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -424,7 +435,7 @@ func TestRepository_DeleteByIDAndProductID(t *testing.T) {
 
 		productID1 := tdb.CreateTestProduct(t, "Product 1", nil, 99.99)
 		productID2 := tdb.CreateTestProduct(t, "Product 2", nil, 49.99)
-		reviewID := tdb.CreateTestReview(t, productID1, "Author", 5, nil)
+		reviewID := tdb.CreateTestReview(t, productID1, "John", "Doe", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -455,9 +466,9 @@ func TestRepository_GetAverageRatingByProductID(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Test Product", nil, 99.99)
-		tdb.CreateTestReview(t, productID, "User1", 5, nil)
-		tdb.CreateTestReview(t, productID, "User2", 3, nil)
-		tdb.CreateTestReview(t, productID, "User3", 4, nil)
+		tdb.CreateTestReview(t, productID, "User1", "First", 5, nil)
+		tdb.CreateTestReview(t, productID, "User2", "Second", 3, nil)
+		tdb.CreateTestReview(t, productID, "User3", "Third", 4, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)

@@ -60,8 +60,11 @@ func TestGetProductReviews(t *testing.T) {
 			resp = client.Get(fmt.Sprintf("/api/v1/products/%s/reviews", productID))
 
 			reviews := assertions.AssertReviewsList(resp, 1)
-			if reviews[0].Author == nil || *reviews[0].Author == "" {
-				t.Error("Author should not be empty")
+			if reviews[0].FirstName == nil || *reviews[0].FirstName == "" {
+				t.Error("FirstName should not be empty")
+			}
+			if reviews[0].LastName == nil || *reviews[0].LastName == "" {
+				t.Error("LastName should not be empty")
 			}
 			if reviews[0].Comment == nil || *reviews[0].Comment == "" {
 				t.Error("Comment should not be empty")

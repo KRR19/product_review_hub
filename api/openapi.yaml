@@ -569,10 +569,15 @@ components:
           description: Optional text comment for the review
           example: "Great product! Highly recommended."
           nullable: true
-        author:
+        first_name:
           type: string
-          description: Name of the review author
-          example: "John Doe"
+          description: First name of the review author
+          example: "John"
+          nullable: true
+        last_name:
+          type: string
+          description: Last name of the review author
+          example: "Doe"
           nullable: true
     
     ReviewCreate:
@@ -590,10 +595,14 @@ components:
           type: string
           description: Optional text comment for the review
           example: "Great product! Highly recommended."
-        author:
+        first_name:
           type: string
-          description: Name of the review author
-          example: "John Doe"
+          description: First name of the review author
+          example: "John"
+        last_name:
+          type: string
+          description: Last name of the review author
+          example: "Doe"
     
     ReviewUpdate:
       type: object
@@ -610,10 +619,14 @@ components:
           type: string
           description: Optional text comment for the review
           example: "Good product, but could be better."
-        author:
+        first_name:
           type: string
-          description: Name of the review author
-          example: "John Doe"
+          description: First name of the review author
+          example: "John"
+        last_name:
+          type: string
+          description: Last name of the review author
+          example: "Doe"
     
     ErrorResponse:
       type: object

@@ -38,13 +38,13 @@ func (r *Repository) CommitTx(ctx context.Context, tx *sqlx.Tx) error {
 // Create inserts a new review into the database.
 func (r *Repository) Create(ctx context.Context, tx *sqlx.Tx, params models.CreateReviewParams) (*models.Review, error) {
 	query := `
-		INSERT INTO reviews (product_id, author, rating, comment)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, product_id, author, rating, comment, created_at, updated_at
+		INSERT INTO reviews (product_id, first_name, last_name, rating, comment)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 	`
 
 	var review models.Review
-	err := tx.QueryRowxContext(ctx, query, params.ProductID, params.Author, params.Rating, params.Comment).
+	err := tx.QueryRowxContext(ctx, query, params.ProductID, params.FirstName, params.LastName, params.Rating, params.Comment).
 		StructScan(&review)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create review: %w", err)
@@ -56,7 +56,7 @@ func (r *Repository) Create(ctx context.Context, tx *sqlx.Tx, params models.Crea
 // GetByID retrieves a review by its ID.
 func (r *Repository) GetByID(ctx context.Context, tx *sqlx.Tx, id int64) (*models.Review, error) {
 	query := `
-		SELECT id, product_id, author, rating, comment, created_at, updated_at
+		SELECT id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 		FROM reviews
 		WHERE id = $1
 	`
@@ -76,7 +76,7 @@ func (r *Repository) GetByID(ctx context.Context, tx *sqlx.Tx, id int64) (*model
 // GetByIDAndProductID retrieves a review by its ID and product ID.
 func (r *Repository) GetByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64) (*models.Review, error) {
 	query := `
-		SELECT id, product_id, author, rating, comment, created_at, updated_at
+		SELECT id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 		FROM reviews
 		WHERE id = $1 AND product_id = $2
 	`
@@ -96,7 +96,7 @@ func (r *Repository) GetByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, p
 // ListByProductID retrieves all reviews for a specific product.
 func (r *Repository) ListByProductID(ctx context.Context, tx *sqlx.Tx, params models.ListReviewsParams) ([]models.Review, error) {
 	query := `
-		SELECT id, product_id, author, rating, comment, created_at, updated_at
+		SELECT id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 		FROM reviews
 		WHERE product_id = $1
 		ORDER BY created_at DESC
@@ -116,13 +116,13 @@ func (r *Repository) ListByProductID(ctx context.Context, tx *sqlx.Tx, params mo
 func (r *Repository) Update(ctx context.Context, tx *sqlx.Tx, id int64, params models.UpdateReviewParams) (*models.Review, error) {
 	query := `
 		UPDATE reviews
-		SET author = $1, rating = $2, comment = $3, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $4
-		RETURNING id, product_id, author, rating, comment, created_at, updated_at
+		SET first_name = $1, last_name = $2, rating = $3, comment = $4, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $5
+		RETURNING id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 	`
 
 	var review models.Review
-	err := tx.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id).
+	err := tx.QueryRowxContext(ctx, query, params.FirstName, params.LastName, params.Rating, params.Comment, id).
 		StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -138,13 +138,13 @@ func (r *Repository) Update(ctx context.Context, tx *sqlx.Tx, id int64, params m
 func (r *Repository) UpdateByIDAndProductID(ctx context.Context, tx *sqlx.Tx, id, productID int64, params models.UpdateReviewParams) (*models.Review, error) {
 	query := `
 		UPDATE reviews
-		SET author = $1, rating = $2, comment = $3, updated_at = CURRENT_TIMESTAMP
-		WHERE id = $4 AND product_id = $5
-		RETURNING id, product_id, author, rating, comment, created_at, updated_at
+		SET first_name = $1, last_name = $2, rating = $3, comment = $4, updated_at = CURRENT_TIMESTAMP
+		WHERE id = $5 AND product_id = $6
+		RETURNING id, product_id, first_name, last_name, rating, comment, created_at, updated_at
 	`
 
 	var review models.Review
-	err := tx.QueryRowxContext(ctx, query, params.Author, params.Rating, params.Comment, id, productID).
+	err := tx.QueryRowxContext(ctx, query, params.FirstName, params.LastName, params.Rating, params.Comment, id, productID).
 		StructScan(&review)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

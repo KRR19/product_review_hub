@@ -15,7 +15,8 @@ Content-Type: {{contentType}}
 {
     "rating": 5,
     "comment": "Great product! Highly recommended.",
-    "author": "John Doe"
+    "first_name": "John",
+    "last_name": "Doe"
 }
 
 PUT {{baseUrl}}/api/v1/products/{{productId}}/reviews/{{reviewId}}
@@ -24,7 +25,8 @@ Content-Type: {{contentType}}
 {
     "rating": 4,
     "comment": "Good product, but could be better.",
-    "author": "John Doe"
+    "first_name": "John",
+    "last_name": "Doe"
 }
 
 DELETE {{baseUrl}}/api/v1/products/{{productId}}/reviews/{{reviewId}}

@@ -185,20 +185,23 @@ func (f *ReviewFixtures) ValidCreateRequestWithRating(rating int) api.ReviewCrea
 
 // ValidCreateRequestFull returns a valid ReviewCreate request with all fields.
 func (f *ReviewFixtures) ValidCreateRequestFull() api.ReviewCreate {
-	author := "John Doe"
+	firstName := "John"
+	lastName := "Doe"
 	comment := "Great product! Highly recommended."
 	return api.ReviewCreate{
-		Rating:  5,
-		Author:  &author,
-		Comment: &comment,
+		Rating:    5,
+		FirstName: &firstName,
+		LastName:  &lastName,
+		Comment:   &comment,
 	}
 }
 
-// ValidCreateRequestWithAuthor returns a valid ReviewCreate request with author.
-func (f *ReviewFixtures) ValidCreateRequestWithAuthor(author string) api.ReviewCreate {
+// ValidCreateRequestWithAuthor returns a valid ReviewCreate request with first and last name.
+func (f *ReviewFixtures) ValidCreateRequestWithAuthor(firstName, lastName string) api.ReviewCreate {
 	return api.ReviewCreate{
-		Rating: 4,
-		Author: &author,
+		Rating:    4,
+		FirstName: &firstName,
+		LastName:  &lastName,
 	}
 }
 
@@ -240,12 +243,14 @@ func (f *ReviewFixtures) ValidUpdateRequest() api.ReviewUpdate {
 
 // ValidUpdateRequestFull returns a valid ReviewUpdate request with all fields.
 func (f *ReviewFixtures) ValidUpdateRequestFull() api.ReviewUpdate {
-	author := "Jane Doe"
+	firstName := "Jane"
+	lastName := "Doe"
 	comment := "Updated review - still great!"
 	return api.ReviewUpdate{
-		Rating:  4,
-		Author:  &author,
-		Comment: &comment,
+		Rating:    4,
+		FirstName: &firstName,
+		LastName:  &lastName,
+		Comment:   &comment,
 	}
 }
 
@@ -265,22 +270,26 @@ func (f *ReviewFixtures) UpdateRequestWithRatingAboveMax() api.ReviewUpdate {
 
 // CreateRequestWithUnicode returns a ReviewCreate request with unicode characters.
 func (f *ReviewFixtures) CreateRequestWithUnicode() api.ReviewCreate {
-	author := "Иван Петров"
+	firstName := "Иван"
+	lastName := "Петров"
 	comment := "Отличный продукт! 五星好评 🌟"
 	return api.ReviewCreate{
-		Rating:  5,
-		Author:  &author,
-		Comment: &comment,
+		Rating:    5,
+		FirstName: &firstName,
+		LastName:  &lastName,
+		Comment:   &comment,
 	}
 }
 
 // CreateRequestWithSpecialChars returns a ReviewCreate request with special characters.
 func (f *ReviewFixtures) CreateRequestWithSpecialChars() api.ReviewCreate {
-	author := "John 'The Reviewer' Doe"
+	firstName := "John 'The Reviewer'"
+	lastName := "Doe"
 	comment := "Great <product> with \"quotes\" & special chars!"
 	return api.ReviewCreate{
-		Rating:  5,
-		Author:  &author,
-		Comment: &comment,
+		Rating:    5,
+		FirstName: &firstName,
+		LastName:  &lastName,
+		Comment:   &comment,
 	}
 }

@@ -110,8 +110,8 @@ func TestRepository_GetByID(t *testing.T) {
 
 		desc := "Test Description"
 		productID := tdb.CreateTestProduct(t, "Test Product", &desc, 99.99)
-		tdb.CreateTestReview(t, productID, "User1", 5, nil)
-		tdb.CreateTestReview(t, productID, "User2", 3, nil)
+		tdb.CreateTestReview(t, productID, "User1", "Last1", 5, nil)
+		tdb.CreateTestReview(t, productID, "User2", "Last2", 3, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -192,8 +192,8 @@ func TestRepository_List(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Product", nil, 99.99)
-		tdb.CreateTestReview(t, productID, "User1", 5, nil)
-		tdb.CreateTestReview(t, productID, "User2", 3, nil)
+		tdb.CreateTestReview(t, productID, "User1", "Last1", 5, nil)
+		tdb.CreateTestReview(t, productID, "User2", "Last2", 3, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)
@@ -300,7 +300,7 @@ func TestRepository_Delete(t *testing.T) {
 		tdb.Cleanup(t)
 
 		productID := tdb.CreateTestProduct(t, "Product", nil, 10.00)
-		tdb.CreateTestReview(t, productID, "User", 5, nil)
+		tdb.CreateTestReview(t, productID, "User", "Last", 5, nil)
 
 		tx, err := repo.BeginTx(ctx)
 		require.NoError(t, err)

@@ -8,7 +8,8 @@ import (
 type Review struct {
 	ID        int64     `db:"id"`
 	ProductID int64     `db:"product_id"`
-	Author    string    `db:"author"`
+	FirstName string    `db:"first_name"`
+	LastName  string    `db:"last_name"`
 	Rating    int       `db:"rating"`
 	Comment   *string   `db:"comment"`
 	CreatedAt time.Time `db:"created_at"`
@@ -18,16 +19,18 @@ type Review struct {
 // CreateReviewParams contains parameters for creating a new review.
 type CreateReviewParams struct {
 	ProductID int64
-	Author    string
+	FirstName string
+	LastName  string
 	Rating    int
 	Comment   *string
 }
 
 // UpdateReviewParams contains parameters for updating a review.
 type UpdateReviewParams struct {
-	Author  string
-	Rating  int
-	Comment *string
+	FirstName string
+	LastName  string
+	Rating    int
+	Comment   *string
 }
 
 // ListReviewsParams contains parameters for listing reviews.

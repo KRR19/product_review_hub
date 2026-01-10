@@ -107,12 +107,12 @@ func (tdb *TestDB) CreateTestProduct(t *testing.T, name string, description *str
 }
 
 // CreateTestReview creates a test review and returns its ID.
-func (tdb *TestDB) CreateTestReview(t *testing.T, productID int64, author string, rating int, comment *string) int64 {
+func (tdb *TestDB) CreateTestReview(t *testing.T, productID int64, firstName, lastName string, rating int, comment *string) int64 {
 	t.Helper()
 
 	var id int64
-	query := `INSERT INTO reviews (product_id, author, rating, comment) VALUES ($1, $2, $3, $4) RETURNING id`
-	err := tdb.DB.QueryRowx(query, productID, author, rating, comment).Scan(&id)
+	query := `INSERT INTO reviews (product_id, first_name, last_name, rating, comment) VALUES ($1, $2, $3, $4, $5) RETURNING id`
+	err := tdb.DB.QueryRowx(query, productID, firstName, lastName, rating, comment).Scan(&id)
 	require.NoError(t, err, "failed to create test review")
 
 	return id
